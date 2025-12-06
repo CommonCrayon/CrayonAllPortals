@@ -1,13 +1,11 @@
 
 # Usage
 
-1. Install
+1. Download CrayonAllPortals.exe from releases.
 
-2. Run
+2. Run downloaded executable file.
 
-3. Enter Data
-
-4. Boom
+3. TODO
 
 
 # TODO
