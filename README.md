@@ -10,6 +10,13 @@
 4. Boom
 
 
+# TODO
+
+1. Better Path Tracking Algorithm
+2. Player Path Depth Control
+3. Ideal Path for discovering portals in new ring calculator
+4. Angle to stronghold from position calculator
+
 # BUILD
 
 ### Install Packages
