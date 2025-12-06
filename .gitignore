@@ -1,0 +1,5 @@
+portals_venv
+__pycache__
+dist
+build
+*.spec
