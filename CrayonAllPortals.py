@@ -63,8 +63,6 @@ class App(ctk.CTk):
         title = ctk.CTkLabel(sidebar, text="Stronghold Ring Locations", font=("Arial", 18))
         title.grid(row=0, column=0, padx=10, pady=10)
 
-        blind_labels = ["Blind at (200, 0)", "Blind at (600, 0)", "Blind at (1000, 0)", "Blind at (1400, 0)", "Blind at (1800, 0)", "Blind at (2200, 0)", "Blind at (2600, 0)", "Blind at (3000, 0)"]
-
         # Make a entry box for all 8 rings
         for i in range(8):
             row_frame = ctk.CTkFrame(sidebar)
@@ -81,7 +79,7 @@ class App(ctk.CTk):
             ctk.CTkLabel(row_frame, text=f"Ring {i+1}", font=("Arial", 16)).grid(row=0, column=0, sticky="w", padx=(5, 0), pady=(5, 0))
 
             # blind label
-            ctk.CTkLabel(row_frame, text=blind_labels[i]).grid(row=0, column=1, columnspan=2, sticky="e", padx=(0, 5), pady=(5, 0))
+            ctk.CTkLabel(row_frame, text=f"OW: {MAGNITUDE_PER_RING[i]} | Nether: {int(MAGNITUDE_PER_RING[i]/8)}").grid(row=0, column=1, columnspan=2, sticky="e", padx=(0, 5), pady=(5, 0))
 
             # X and Z Strings
             stronghold_ring_string = ctk.StringVar(value=f"{i+1}")

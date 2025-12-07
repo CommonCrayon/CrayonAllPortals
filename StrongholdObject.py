@@ -119,13 +119,15 @@ class StrongholdObject:
     # Draw on canvas
     def draw_on_canvas(self):
 
-        # Size of Image Frame - minus 10 for padding
-        frame_size_x = int((self.app.image_frame.winfo_width()/2) - 10) * 2
-        frame_size_y = int((self.app.image_frame.winfo_height()/2) - 10) * 2
+        # Use square image size
+        side = self.app.image_size 
 
-        # Position of stronghold
-        img_x = int((self.x - WORLD_MIN) / WORLD_RANGE * frame_size_x)
-        img_y = int((self.z - WORLD_MIN) / WORLD_RANGE * frame_size_y)
+        offset_x = (self.app.canvas.winfo_width() - side) // 2
+        offset_y = (self.app.canvas.winfo_height() - side) // 2
+
+        # Map world coordinates to image coordinates
+        img_x = int((self.x - WORLD_MIN) / WORLD_RANGE * side) + offset_x
+        img_y = int((self.z - WORLD_MIN) / WORLD_RANGE * side) + offset_y
 
         # Determine color based on status
         color_map = {

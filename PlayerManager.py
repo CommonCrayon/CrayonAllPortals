@@ -209,9 +209,13 @@ class PlayerManager(ctk.CTkToplevel):
 
 
     def draw_on_canvas(self):
-        # Size of Image Frame - minus 10 for padding
-        frame_size_x = int((self.parent.image_frame.winfo_width() / 2) - 10) * 2
-        frame_size_y = int((self.parent.image_frame.winfo_height() / 2) - 10) * 2
+        
+        # Use the square image size
+        side = self.parent.image_size
+
+        # Offsets for centering
+        offset_x = (self.parent.canvas.winfo_width() - side) // 2
+        offset_y = (self.parent.canvas.winfo_height() - side) // 2
 
         # Delete previous canvas items if any
         if hasattr(self, "canvas_items"):
@@ -222,19 +226,20 @@ class PlayerManager(ctk.CTkToplevel):
                     pass
         self.canvas_items = []
 
-        # Define a list of colors to cycle through
         colors = ["cyan", "magenta", "yellow", "orange", "purple"]
 
         # Iterate through each player's path
         for i, path in enumerate(self.player_paths):
-            color = colors[i % len(colors)]  # Cycle through colors if more players than colors
+
+            color = colors[i % len(colors)]
             prev_x, prev_y = None, None
+            
             for point in path:
                 x, y = point[1], point[2]
 
-                # Map world coordinates to canvas coordinates
-                img_x = int((x - WORLD_MIN) / WORLD_RANGE * frame_size_x)
-                img_y = int((y - WORLD_MIN) / WORLD_RANGE * frame_size_y)
+                # Map world coordinates to canvas coordinates (inside the square image)
+                img_x = int((x - WORLD_MIN) / WORLD_RANGE * side) + offset_x
+                img_y = int((y - WORLD_MIN) / WORLD_RANGE * side) + offset_y
 
                 # Draw line from previous point
                 if prev_x is not None and prev_y is not None:
@@ -242,3 +247,8 @@ class PlayerManager(ctk.CTkToplevel):
                     self.canvas_items.append(line)
 
                 prev_x, prev_y = img_x, img_y
+
+
+        # Redraw canvas markers
+        for sh in self.parent.stronghold_objects:
+            sh.draw_on_canvas()

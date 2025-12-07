@@ -10,6 +10,15 @@
 4. Boom
 
 
+# TODO
+1. Add Depth number into Player Manager
+2. Add real method to update ordering of player
+3. Data Validation when clicking set on rings.
+4. Redraw paths on canvas resize
+5. Larger font on widgets
+6. Larger font for active, smaller for rest
+
+
 # BUILD
 
 ### Install Packages
