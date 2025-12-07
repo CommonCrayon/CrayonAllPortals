@@ -4,6 +4,7 @@ import numpy as np
 import sys, os
 
 from StrongholdObject import StrongholdObject
+from PlayerManager import PlayerManager
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -39,6 +40,7 @@ class App(ctk.CTk):
 
         self.stronghold_objects = []  # all stronghold objects
         self.image_size = 869 # Size of Rings
+        self.player_management_window = None
 
         self.player_colors = ["purple", "orange", "cyan", "yellow", "magenta", "lime", "brown"]
 
@@ -128,7 +130,6 @@ class App(ctk.CTk):
         player_path_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
 
         player_path_frame.grid_columnconfigure(0, weight=1)
-        player_path_frame.grid_columnconfigure(1, weight=1)
 
 
         # Title
@@ -137,36 +138,20 @@ class App(ctk.CTk):
             text="Player Pathing Generator",
             font=("Arial", 18),
             justify="left"
-        ).grid(row=0, column=0, columnspan=2, sticky="new", padx=10, pady=(10, 20))
-
-        # Number of players label
-        num_players_label = ctk.CTkLabel(
-            player_path_frame,
-            text="Number of Players:",
-            font=("Arial", 16)
-        )
-        num_players_label.grid(row=1, column=0, sticky="e", padx=(10, 5), pady=5)
-
-        # Number of players entry box
-        self.num_players_entry = ctk.CTkEntry(
-            player_path_frame,
-            width=120,
-            placeholder_text="Enter amount"
-        )
-        self.num_players_entry.grid(row=1, column=1, sticky="w", padx=(5, 10), pady=5)
+        ).grid(row=0, column=0, sticky="new", padx=10, pady=(10, 20))
 
         # Generate button
         self.generate_path_button = ctk.CTkButton(
             player_path_frame,
-            text="Generate Paths",
+            text="Open Player Manager",
             font=("Arial", 16),
             width=160,
             height=38,
             corner_radius=12,
-            command=self.generate_paths
+            command=self.player_manager
         )
 
-        self.generate_path_button.grid(row=2, column=0, columnspan=2, pady=(15, 10))
+        self.generate_path_button.grid(row=1, column=0, pady=(15, 10))
 
         #======================================================================================================================
         # Strongholds List Panels
@@ -266,84 +251,12 @@ class App(ctk.CTk):
             self.stronghold_objects.append(sh)
 
 
-    def distance(self, p, sh):
-        px, pz = p
-        return ((sh.x - px)**2 + (sh.z - pz)**2) ** 0.5
-
-
-    def generate_paths(self):
-
-        # Clear previous path lines
-        if hasattr(self, 'path_lines'):
-            for line in self.path_lines:
-                try:
-                    self.canvas.delete(line)
-                except:
-                    pass
-        self.path_lines = []
-
-        # Number of players
-        try:
-            num_players = int(self.num_players_entry.get())
-            if num_players <= 0:
-                raise ValueError
-        except:
-            print("Invalid number of players.")
-            return
-
-        players = [f"Player {i+1}" for i in range(num_players)]
-
-        # list only active + remaining strongholds
-        strongholds_todo = [sh for sh in self.stronghold_objects if sh.status_var.get() in ("Active", "Remaining")]
-
-        # Initialize player locations to 0 0. MAYBE CHANGE
-        player_locations = {player: [0, 0] for player in players}
-
-        while len(strongholds_todo) > 0:
-
-            for idx, player in enumerate(players):
-
-                if len(strongholds_todo) == 0:
-                    break
-
-                current_player_location = player_locations[player]
-
-                shortest_distance = float("inf")
-                best_sh_i = 0
-
-                # Get closest stronghold to this player's location
-                for index, sh in enumerate(strongholds_todo):
-
-                    distance = self.distance(current_player_location, sh)
-
-                    if distance < shortest_distance:
-                        shortest_distance = distance
-                        best_sh_i = index
-
-                chosen_sh = strongholds_todo[best_sh_i]
-
-                # print(player + " will go to Stronghold: " + str(chosen_sh.index + 1))
-
-                # Draw path
-                color = self.player_colors[idx % len(self.player_colors)]
-
-                # Current Player Location X Z
-                x1 = int((current_player_location[0] - WORLD_MIN) / WORLD_RANGE * self.image_size)
-                z1 = int((current_player_location[1] - WORLD_MIN) / WORLD_RANGE * self.image_size)
-
-                # Next Stronghold Location X Z
-                x2 = int((chosen_sh.x - WORLD_MIN) / WORLD_RANGE * self.image_size)
-                z2 = int((chosen_sh.z - WORLD_MIN) / WORLD_RANGE * self.image_size)
-
-                # Draw Line
-                line = self.canvas.create_line(x1, z1, x2, z2, fill=color, width=3)
-                self.path_lines.append(line)
-
-                # update player location
-                player_locations[player] = [chosen_sh.x, chosen_sh.z]
-
-                # remove stronghold from future paths
-                strongholds_todo.pop(best_sh_i)
+    
+    def player_manager(self):
+        if self.player_management_window is None or not self.player_management_window.winfo_exists():
+            self.player_management_window = PlayerManager(self, self.stronghold_objects)  # create window if its None or destroyed
+        else:
+            self.player_management_window.focus()  # if window exists focus it
 
 
 
