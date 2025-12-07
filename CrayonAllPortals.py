@@ -108,13 +108,13 @@ class App(ctk.CTk):
         # Image
         #======================================================================================================================
 
-        image_frame = ctk.CTkFrame(self)
-        image_frame.grid(row=0, column=1, columnspan=2, sticky="nsew", pady=10)
+        self.image_frame = ctk.CTkFrame(self)
+        self.image_frame.grid(row=0, column=1, columnspan=2, sticky="nsew", pady=10)
 
-        image_frame.grid_columnconfigure(0, weight=1)
-        image_frame.grid_rowconfigure(0, weight=1)
+        self.image_frame.grid_columnconfigure(0, weight=1)
+        self.image_frame.grid_rowconfigure(0, weight=1)
 
-        self.canvas = ctk.CTkCanvas(image_frame, bg="#2B2B2B", highlightthickness=0)
+        self.canvas = ctk.CTkCanvas(self.image_frame, bg="#2B2B2B", highlightthickness=0)
         self.canvas.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
         # Load original image once
@@ -283,6 +283,8 @@ class App(ctk.CTk):
         self.canvas.create_image(x, y, anchor="nw", image=self.bg_img)
 
         # TODO Redraw canvas markers
+        for sh in self.stronghold_objects:
+            sh.draw_on_canvas()
 
 
 if __name__ == "__main__":
