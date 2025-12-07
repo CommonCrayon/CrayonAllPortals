@@ -10,7 +10,10 @@ class PlayerManager(ctk.CTkToplevel):
     def __init__(self, parent, stronghold_objects, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
 
+        self.parent = parent
         self.stronghold_objects = stronghold_objects
+        self.player_paths = None
+
         self.attributes("-topmost", True)
         self.title("Player Manager")
 
@@ -42,12 +45,16 @@ class PlayerManager(ctk.CTkToplevel):
         #======================================================================================================================
         # Player Stronghold Assigner
         #======================================================================================================================
-        player_stronghold_assigner_frame = ctk.CTkFrame(self)
-        player_stronghold_assigner_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
+        button_actions_frame = ctk.CTkFrame(self)
+        button_actions_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
+
+        # Generate a path and assign strongholds to players
+        self.assign_stronghold_button = ctk.CTkButton(button_actions_frame, text="Generate Stronghold Assignments", font=("Arial", 18), command=self.assign_strongholds)
+        self.assign_stronghold_button.grid(row=0, column=0, sticky="w", padx=5, pady=5)
 
         # Number of players Button Set
-        self.assign_stronghold_button = ctk.CTkButton(player_stronghold_assigner_frame, width=64, text="Generate Stronghold Assignments", font=("Arial", 18), command=self.assign_strongholds)
-        self.assign_stronghold_button.grid(row=0, column=0, sticky="w", padx=5, pady=5)
+        self.assign_stronghold_button = ctk.CTkButton(button_actions_frame, text="Draw on Canvas", font=("Arial", 18), command=self.draw_on_canvas)
+        self.assign_stronghold_button.grid(row=0, column=1, sticky="w", padx=5, pady=5)
 
         #======================================================================================================================
         # Scrollable Window for each player
@@ -124,12 +131,12 @@ class PlayerManager(ctk.CTkToplevel):
         strongholds_todo = [sh for sh in self.stronghold_objects if sh.status_var.get() in ("Active", "Remaining")]
 
         # Intialise Player path
-        players = [[["START", 0, 0]] for i in range(num_players)]
+        self.player_paths = [[["START", 0, 0]] for i in range(num_players)]
         players_last_position = [[0, 0] for i in range(num_players)]
 
         # Iterate over strongholds whilst popping the ones assigned
         while len(strongholds_todo) > 0:
-            for idx, player in enumerate(players):
+            for idx, player in enumerate(self.player_paths):
 
                 if len(strongholds_todo) == 0:
                     break
@@ -151,7 +158,7 @@ class PlayerManager(ctk.CTkToplevel):
                 chosen_sh = strongholds_todo[best_sh_i]
 
                 # Append to Player Path
-                players[idx].append([STRONGHOLDS_RING_START[chosen_sh.ring] + chosen_sh.index, chosen_sh.x, chosen_sh.z])
+                self.player_paths[idx].append([STRONGHOLDS_RING_START[chosen_sh.ring] + chosen_sh.index, chosen_sh.x, chosen_sh.z])
 
                 # Update Last Player Position
                 players_last_position[idx] = [chosen_sh.x, chosen_sh.z]
@@ -161,7 +168,7 @@ class PlayerManager(ctk.CTkToplevel):
 
         
         # Append path info to the existing player frames
-        for idx, player_path in enumerate(players):
+        for idx, player_path in enumerate(self.player_paths):
             frame = self.scrollable_window.winfo_children()[idx]  # Get the frame for this player
 
             # Add Labels
@@ -199,3 +206,39 @@ class PlayerManager(ctk.CTkToplevel):
             button_frame.grid_columnconfigure(0, weight=1)
             button_frame.grid_rowconfigure(0, weight=1)
             ctk.CTkButton(button_frame, text="Update").grid(row=0, column=0, sticky="nesw")
+
+
+    def draw_on_canvas(self):
+        # Size of Image Frame - minus 10 for padding
+        frame_size_x = int((self.parent.image_frame.winfo_width() / 2) - 10) * 2
+        frame_size_y = int((self.parent.image_frame.winfo_height() / 2) - 10) * 2
+
+        # Delete previous canvas items if any
+        if hasattr(self, "canvas_items"):
+            for item in self.canvas_items:
+                try:
+                    self.parent.canvas.delete(item)
+                except Exception:
+                    pass
+        self.canvas_items = []
+
+        # Define a list of colors to cycle through
+        colors = ["cyan", "magenta", "yellow", "orange", "purple"]
+
+        # Iterate through each player's path
+        for i, path in enumerate(self.player_paths):
+            color = colors[i % len(colors)]  # Cycle through colors if more players than colors
+            prev_x, prev_y = None, None
+            for point in path:
+                x, y = point[1], point[2]
+
+                # Map world coordinates to canvas coordinates
+                img_x = int((x - WORLD_MIN) / WORLD_RANGE * frame_size_x)
+                img_y = int((y - WORLD_MIN) / WORLD_RANGE * frame_size_y)
+
+                # Draw line from previous point
+                if prev_x is not None and prev_y is not None:
+                    line = self.parent.canvas.create_line(prev_x, prev_y, img_x, img_y, fill=color, width=4)
+                    self.canvas_items.append(line)
+
+                prev_x, prev_y = img_x, img_y

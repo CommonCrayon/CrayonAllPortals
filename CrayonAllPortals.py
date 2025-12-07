@@ -42,9 +42,6 @@ class App(ctk.CTk):
         self.image_size = 869 # Size of Rings
         self.player_management_window = None
 
-        self.player_colors = ["purple", "orange", "cyan", "yellow", "magenta", "lime", "brown"]
-
-
         # Configure weight so scroll frames expand properly
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
@@ -282,7 +279,7 @@ class App(ctk.CTk):
         self.canvas.delete("all")
         self.canvas.create_image(x, y, anchor="nw", image=self.bg_img)
 
-        # TODO Redraw canvas markers
+        # Redraw canvas markers
         for sh in self.stronghold_objects:
             sh.draw_on_canvas()
 
