@@ -118,10 +118,11 @@ class StrongholdObject:
 
     # Draw on canvas
     def draw_on_canvas(self):
-        c = self.app.canvas
 
-        img_x = int((self.x - WORLD_MIN) / WORLD_RANGE * 869)
-        img_y = int((self.z - WORLD_MIN) / WORLD_RANGE * 869)
+        print(self.app.canvas)
+
+        img_x = int((self.x - WORLD_MIN) / WORLD_RANGE * self.app.image_size)
+        img_y = int((self.z - WORLD_MIN) / WORLD_RANGE * self.app.image_size)
 
         # Determine color based on status
         color_map = {
@@ -134,13 +135,13 @@ class StrongholdObject:
         # Delete previous canvas items if any
         for item in self.canvas_items:
             try:
-                c.delete(item)
+                self.app.canvas.delete(item)
             except Exception:
                 pass
 
         # Draw new dot and text
-        dot = c.create_oval(img_x-5, img_y-5, img_x+5, img_y+5, fill=dot_color, outline="")
-        text = c.create_text(
+        dot = self.app.canvas.create_oval(img_x-5, img_y-5, img_x+5, img_y+5, fill=dot_color, outline="")
+        text = self.app.canvas.create_text(
             img_x + 10,
             img_y,
             text=str(STRONGHOLDS_RING_START[self.ring] + self.index),

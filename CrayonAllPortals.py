@@ -30,55 +30,76 @@ class App(ctk.CTk):
         super().__init__()
 
         self.title("Crayon All Portals")
+
+        self.geometry("1280x1080")
+
+        ctk.deactivate_automatic_dpi_awareness()
+        ctk.set_widget_scaling(1)  # widget dimensions and text size
+        ctk.set_window_scaling(1)  # window geometry dimensions
+
         self.stronghold_objects = []  # all stronghold objects
+        self.image_size = 869 # Size of Rings
 
         self.player_colors = ["purple", "orange", "cyan", "yellow", "magenta", "lime", "brown"]
 
 
         # Configure weight so scroll frames expand properly
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure(2, weight=1)
         self.grid_columnconfigure(3, weight=1)
-        self.grid_columnconfigure(4, weight=1)
-        self.grid_rowconfigure(0, minsize=32)
+
+        self.grid_rowconfigure(0, weight=2)
         self.grid_rowconfigure(1, weight=1)
 
+
         #======================================================================================================================
-        # LEFT SIDEBAR 
+        # Stronghold Ring Reference
         #======================================================================================================================
         sidebar = ctk.CTkFrame(self)
-        sidebar.grid(row=0, column=0, rowspan=2, sticky="nws", padx=10, pady=10)
+        sidebar.grid(row=0, column=0, sticky="nesw", padx=10, pady=10)
 
-        title = ctk.CTkLabel(sidebar, text="Stronghold Ring\nLocations", font=("Arial", 18))
-        title.grid(row=0, column=0, columnspan=2, sticky="w", padx=10, pady=10)
+        sidebar.grid_columnconfigure(0, weight=1)
+
+        title = ctk.CTkLabel(sidebar, text="Stronghold Ring Locations", font=("Arial", 18))
+        title.grid(row=0, column=0, padx=10, pady=10)
+
+        blind_labels = ["Blind at (200, 0)", "Blind at (600, 0)", "Blind at (1000, 0)", "Blind at (1400, 0)", "Blind at (1800, 0)", "Blind at (2200, 0)", "Blind at (2600, 0)", "Blind at (3000, 0)"]
 
         # Make a entry box for all 8 rings
         for i in range(8):
             row_frame = ctk.CTkFrame(sidebar)
             row_frame.grid(row=i+1, column=0, sticky="nsew", padx=4, pady=4)
 
-            label = ctk.CTkLabel(row_frame, text=f"Stronghold Ring {i+1}")
-            label.grid(row=0, column=0, columnspan=2, sticky="w", padx=4, pady=2)
+            row_frame.grid_columnconfigure(0, weight=1)
+            row_frame.grid_columnconfigure(1, weight=1)
+            row_frame.grid_columnconfigure(2, weight=1)
+
+            row_frame.grid_rowconfigure(0, weight=1)
+            row_frame.grid_rowconfigure(1, weight=1)
+
+            # Label Title
+            ctk.CTkLabel(row_frame, text=f"Ring {i+1}", font=("Arial", 16)).grid(row=0, column=0, sticky="w", padx=(5, 0), pady=(5, 0))
+
+            # blind label
+            ctk.CTkLabel(row_frame, text=blind_labels[i]).grid(row=0, column=1, columnspan=2, sticky="e", padx=(0, 5), pady=(5, 0))
 
             # X and Z Strings
             stronghold_ring_string = ctk.StringVar(value=f"{i+1}")
-            x_coordinate_string = ctk.StringVar()
-            z_coordinate_string = ctk.StringVar()
+            x_coordinate_string = ctk.StringVar(value="")
+            z_coordinate_string = ctk.StringVar(value="")
 
             # X input box
-            entry_x = ctk.CTkEntry(row_frame, placeholder_text="X Coord", width=64, textvariable=x_coordinate_string)
-            entry_x.grid(row=1, column=0, sticky="w", padx=4, pady=2)
+            entry_x = ctk.CTkEntry(row_frame, placeholder_text="X Coord", textvariable=x_coordinate_string, width=96)
+            entry_x.grid(row=1, column=0, sticky="w", padx=(5, 0), pady=5)
 
             # Z input box
-            entry_z = ctk.CTkEntry(row_frame, placeholder_text="Z Coord", width=64, textvariable=z_coordinate_string)
-            entry_z.grid(row=1, column=1, sticky="w", padx=4, pady=2)
+            entry_z = ctk.CTkEntry(row_frame, placeholder_text="Z Coord", textvariable=z_coordinate_string, width=96)
+            entry_z.grid(row=1, column=1, sticky="w", padx=(5, 0), pady=5)
 
             # Update Button
-            ring_button = ctk.CTkButton(
-                row_frame,
-                text="Update",
-                command=lambda ring=stronghold_ring_string, x=x_coordinate_string, z=z_coordinate_string: self.update_ring(ring, x, z)
-            )
-            ring_button.grid(row=2, column=0, columnspan=2, sticky="w", padx=4, pady=2)
+            ring_button = ctk.CTkButton(row_frame, text="SET", width=64, command=lambda ring=stronghold_ring_string, x=x_coordinate_string, z=z_coordinate_string: self.update_ring(ring, x, z))
+            ring_button.grid(row=1, column=2, sticky="e", padx=5, pady=5)
 
 
         #======================================================================================================================
@@ -86,29 +107,25 @@ class App(ctk.CTk):
         #======================================================================================================================
 
         image_frame = ctk.CTkFrame(self)
-        image_frame.grid(row=0, column=1, sticky="nsew", pady=10)
+        image_frame.grid(row=0, column=1, columnspan=2, sticky="nsew", pady=10)
 
-        self.canvas = ctk.CTkCanvas(
-            image_frame,
-            width=869,
-            height=869,
-            bg="#2B2B2B",
-            highlightthickness=0
-        )
+        image_frame.grid_columnconfigure(0, weight=1)
+        image_frame.grid_rowconfigure(0, weight=1)
 
+        self.canvas = ctk.CTkCanvas(image_frame, bg="#2B2B2B", highlightthickness=0)
         self.canvas.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
+        # Load original image once
         self.original_image = Image.open(img_path)
-        self.bg_img = ImageTk.PhotoImage(self.original_image)
-        self.canvas.create_image(0, 0, anchor="nw", image=self.bg_img)
 
-
+        # Bind canvas resize
+        self.canvas.bind("<Configure>", self.resize_canvas_frame)
 
         #======================================================================================================================
         # Player Path
         #======================================================================================================================
         player_path_frame = ctk.CTkFrame(self)
-        player_path_frame.grid(row=1, column=1, sticky="nsew", pady=(0, 10))
+        player_path_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
 
         player_path_frame.grid_columnconfigure(0, weight=1)
         player_path_frame.grid_columnconfigure(1, weight=1)
@@ -118,7 +135,7 @@ class App(ctk.CTk):
         ctk.CTkLabel(
             player_path_frame,
             text="Player Pathing Generator",
-            font=("Arial", 24),
+            font=("Arial", 18),
             justify="left"
         ).grid(row=0, column=0, columnspan=2, sticky="new", padx=10, pady=(10, 20))
 
@@ -151,8 +168,6 @@ class App(ctk.CTk):
 
         self.generate_path_button.grid(row=2, column=0, columnspan=2, pady=(15, 10))
 
-
-
         #======================================================================================================================
         # Strongholds List Panels
         #======================================================================================================================
@@ -160,7 +175,7 @@ class App(ctk.CTk):
         self.active_count = ctk.StringVar(value="Active Strongholds (0)")
 
         active_panel = ctk.CTkFrame(self)
-        active_panel.grid(row=0, column=2, rowspan=2, sticky="nsew", padx=10, pady=10)
+        active_panel.grid(row=0, column=3, rowspan=2, sticky="nsew", padx=10, pady=10)
 
         active_label = ctk.CTkLabel(active_panel, textvariable=self.active_count, font=("Arial", 18))
         active_label.grid(row=0, column=0, sticky="new", padx=5, pady=5)
@@ -175,7 +190,7 @@ class App(ctk.CTk):
         self.remaining_count = ctk.StringVar(value="Remaining Strongholds (0)")
 
         remaining_panel = ctk.CTkFrame(self)
-        remaining_panel.grid(row=0, column=3, rowspan=2, sticky="nsew", pady=10)
+        remaining_panel.grid(row=1, column=1, sticky="nsew", padx=(0, 5), pady=(0, 10))
 
         remaining_label = ctk.CTkLabel(remaining_panel, textvariable=self.remaining_count, font=("Arial", 18))
         remaining_label.grid(row=0, column=0, sticky="new", padx=5, pady=5)
@@ -190,7 +205,7 @@ class App(ctk.CTk):
         self.completed_count = ctk.StringVar(value="Completed Strongholds (0)")
 
         completed_panel = ctk.CTkFrame(self)
-        completed_panel.grid(row=0, column=4, rowspan=2, sticky="nsew", padx=10, pady=10)
+        completed_panel.grid(row=1, column=2, sticky="nsew", padx=(5, 0), pady=(0, 10))
 
         completed_label = ctk.CTkLabel(completed_panel, textvariable=self.completed_count, font=("Arial", 18))
         completed_label.grid(row=0, column=0, sticky="new", padx=5, pady=5)
@@ -313,12 +328,12 @@ class App(ctk.CTk):
                 color = self.player_colors[idx % len(self.player_colors)]
 
                 # Current Player Location X Z
-                x1 = int((current_player_location[0] - WORLD_MIN) / WORLD_RANGE * 869)
-                z1 = int((current_player_location[1] - WORLD_MIN) / WORLD_RANGE * 869)
+                x1 = int((current_player_location[0] - WORLD_MIN) / WORLD_RANGE * self.image_size)
+                z1 = int((current_player_location[1] - WORLD_MIN) / WORLD_RANGE * self.image_size)
 
                 # Next Stronghold Location X Z
-                x2 = int((chosen_sh.x - WORLD_MIN) / WORLD_RANGE * 869)
-                z2 = int((chosen_sh.z - WORLD_MIN) / WORLD_RANGE * 869)
+                x2 = int((chosen_sh.x - WORLD_MIN) / WORLD_RANGE * self.image_size)
+                z2 = int((chosen_sh.z - WORLD_MIN) / WORLD_RANGE * self.image_size)
 
                 # Draw Line
                 line = self.canvas.create_line(x1, z1, x2, z2, fill=color, width=3)
@@ -331,6 +346,30 @@ class App(ctk.CTk):
                 strongholds_todo.pop(best_sh_i)
 
 
+
+    def resize_canvas_frame(self, event):
+        # Canvas size
+        cw, ch = event.width, event.height
+
+        # Choose square size
+        side = min(cw, ch)
+
+        # Resize original image into a square
+        img = self.original_image.resize((side, side), Image.LANCZOS)
+        self.bg_img = ImageTk.PhotoImage(img)
+
+        # Center position
+        x = (cw - side) // 2
+        y = (ch - side) // 2
+
+        # Set imagesize for canvas draw
+        self.image_size = side
+
+        # Redraw
+        self.canvas.delete("all")
+        self.canvas.create_image(x, y, anchor="nw", image=self.bg_img)
+
+        # TODO Redraw canvas markers
 
 
 if __name__ == "__main__":
