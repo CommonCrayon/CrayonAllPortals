@@ -11,8 +11,8 @@
 
 
 # TODO
-1. Add Depth number into Player Manager
-2. Add real method to update ordering of player
+1. Add real method to update ordering of player
+2. Split by Pie, Do Closest First, Do Closest to Furtherest Zig Zag
 3. Data Validation when clicking set on rings.
 4. Redraw paths on canvas resize
 5. Larger font on widgets

@@ -32,7 +32,7 @@ class App(ctk.CTk):
 
         self.title("Crayon All Portals")
 
-        self.geometry("1280x1080")
+        self.geometry("1337x1080")
 
         ctk.deactivate_automatic_dpi_awareness()
         ctk.set_widget_scaling(1)  # widget dimensions and text size
@@ -60,7 +60,7 @@ class App(ctk.CTk):
 
         sidebar.grid_columnconfigure(0, weight=1)
 
-        title = ctk.CTkLabel(sidebar, text="Stronghold Ring Locations", font=("Arial", 18))
+        title = ctk.CTkLabel(sidebar, text="Stronghold Ring Locations", font=("Arial", 20))
         title.grid(row=0, column=0, padx=10, pady=10)
 
         # Make a entry box for all 8 rings
@@ -76,7 +76,7 @@ class App(ctk.CTk):
             row_frame.grid_rowconfigure(1, weight=1)
 
             # Label Title
-            ctk.CTkLabel(row_frame, text=f"Ring {i+1}", font=("Arial", 16)).grid(row=0, column=0, sticky="w", padx=(5, 0), pady=(5, 0))
+            ctk.CTkLabel(row_frame, text=f"Ring {i+1}", font=("Arial", 18)).grid(row=0, column=0, sticky="w", padx=(5, 0), pady=(5, 0))
 
             # blind label
             ctk.CTkLabel(row_frame, text=f"OW: {MAGNITUDE_PER_RING[i]} | Nether: {int(MAGNITUDE_PER_RING[i]/8)}").grid(row=0, column=1, columnspan=2, sticky="e", padx=(0, 5), pady=(5, 0))
@@ -87,15 +87,15 @@ class App(ctk.CTk):
             z_coordinate_string = ctk.StringVar(value="")
 
             # X input box
-            entry_x = ctk.CTkEntry(row_frame, placeholder_text="X Coord", textvariable=x_coordinate_string, width=96)
+            entry_x = ctk.CTkEntry(row_frame, placeholder_text="X Coord", textvariable=x_coordinate_string, width=96, font=("Arial", 16))
             entry_x.grid(row=1, column=0, sticky="w", padx=(5, 0), pady=5)
 
             # Z input box
-            entry_z = ctk.CTkEntry(row_frame, placeholder_text="Z Coord", textvariable=z_coordinate_string, width=96)
+            entry_z = ctk.CTkEntry(row_frame, placeholder_text="Z Coord", textvariable=z_coordinate_string, width=96, font=("Arial", 16))
             entry_z.grid(row=1, column=1, sticky="w", padx=(5, 0), pady=5)
 
             # Update Button
-            ring_button = ctk.CTkButton(row_frame, text="SET", width=64, command=lambda ring=stronghold_ring_string, x=x_coordinate_string, z=z_coordinate_string: self.update_ring(ring, x, z))
+            ring_button = ctk.CTkButton(row_frame, text="SET", width=64, font=("Arial", 16, 'bold'), command=lambda ring=stronghold_ring_string, x=x_coordinate_string, z=z_coordinate_string: self.update_ring(ring, x, z))
             ring_button.grid(row=1, column=2, sticky="e", padx=5, pady=5)
 
 
@@ -126,17 +126,10 @@ class App(ctk.CTk):
 
         player_path_frame.grid_columnconfigure(0, weight=1)
 
+        ctk.CTkLabel(player_path_frame, text="Player Pathing Management", font=("Arial", 20)).grid(row=0, column=0, sticky="new", padx=10, pady=(10, 20))
 
-        # Title
-        ctk.CTkLabel(
-            player_path_frame,
-            text="Player Pathing Generator",
-            font=("Arial", 18),
-            justify="left"
-        ).grid(row=0, column=0, sticky="new", padx=10, pady=(10, 20))
-
-        # Generate button
-        self.generate_path_button = ctk.CTkButton(
+        # Player Manager Button
+        ctk.CTkButton(
             player_path_frame,
             text="Open Player Manager",
             font=("Arial", 16),
@@ -144,9 +137,7 @@ class App(ctk.CTk):
             height=38,
             corner_radius=12,
             command=self.player_manager
-        )
-
-        self.generate_path_button.grid(row=1, column=0, pady=(15, 10))
+        ).grid(row=1, column=0, pady=(15, 10))
 
         #======================================================================================================================
         # Strongholds List Panels
@@ -157,7 +148,7 @@ class App(ctk.CTk):
         active_panel = ctk.CTkFrame(self)
         active_panel.grid(row=0, column=3, rowspan=2, sticky="nsew", padx=10, pady=10)
 
-        active_label = ctk.CTkLabel(active_panel, textvariable=self.active_count, font=("Arial", 18))
+        active_label = ctk.CTkLabel(active_panel, textvariable=self.active_count, font=("Arial", 20))
         active_label.grid(row=0, column=0, sticky="new", padx=5, pady=5)
 
         self.active_list = ctk.CTkScrollableFrame(active_panel, width=256)
@@ -172,7 +163,7 @@ class App(ctk.CTk):
         remaining_panel = ctk.CTkFrame(self)
         remaining_panel.grid(row=1, column=1, sticky="nsew", padx=(0, 5), pady=(0, 10))
 
-        remaining_label = ctk.CTkLabel(remaining_panel, textvariable=self.remaining_count, font=("Arial", 18))
+        remaining_label = ctk.CTkLabel(remaining_panel, textvariable=self.remaining_count, font=("Arial", 20))
         remaining_label.grid(row=0, column=0, sticky="new", padx=5, pady=5)
 
         self.remaining_list = ctk.CTkScrollableFrame(remaining_panel, width=256)
@@ -187,7 +178,7 @@ class App(ctk.CTk):
         completed_panel = ctk.CTkFrame(self)
         completed_panel.grid(row=1, column=2, sticky="nsew", padx=(5, 0), pady=(0, 10))
 
-        completed_label = ctk.CTkLabel(completed_panel, textvariable=self.completed_count, font=("Arial", 18))
+        completed_label = ctk.CTkLabel(completed_panel, textvariable=self.completed_count, font=("Arial", 20))
         completed_label.grid(row=0, column=0, sticky="new", padx=5, pady=5)
 
         self.completed_list = ctk.CTkScrollableFrame(completed_panel, width=256)

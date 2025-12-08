@@ -63,28 +63,24 @@ class StrongholdObject:
         frame.grid_columnconfigure(3, weight=1)
 
         # ID label
-        ctk.CTkLabel(
-            frame,
-            text=str(STRONGHOLDS_RING_START[self.ring] + self.index),
-            font=("Arial", 20)
+        ctk.CTkLabel(frame, text=str(STRONGHOLDS_RING_START[self.ring] + self.index), font=("Arial", 24)
         ).grid(row=0, column=0, rowspan=3, padx=5, pady=5)
 
         # Overworld
-        ctk.CTkLabel(frame, text="Overworld").grid(row=1, column=1, sticky="w", padx=5)
-        ctk.CTkLabel(frame, text=str(self.x)).grid(row=1, column=2, sticky="e")
-        ctk.CTkLabel(frame, text=str(self.z)).grid(row=1, column=3, padx=(0, 5), sticky="e")
+        ctk.CTkLabel(frame, text="Overworld", font=("Arial", 18)).grid(row=1, column=1, sticky="w", padx=5)
+        ctk.CTkLabel(frame, text=str(self.x), font=("Arial", 18)).grid(row=1, column=2, sticky="e")
+        ctk.CTkLabel(frame, text=str(self.z), font=("Arial", 18)).grid(row=1, column=3, padx=(0, 5), sticky="e")
 
         # Nether
-        ctk.CTkLabel(frame, text="Nether").grid(row=2, column=1, sticky="w", padx=5)
-        ctk.CTkLabel(frame, text=str(round(self.x / 8))).grid(row=2, column=2, sticky="e")
-        ctk.CTkLabel(frame, text=str(round(self.z / 8))).grid(row=2, column=3, padx=(0, 5), sticky="e")
+        ctk.CTkLabel(frame, text="Nether", font=("Arial", 18)).grid(row=2, column=1, sticky="w", padx=5)
+        ctk.CTkLabel(frame, text=str(round(self.x / 8)), font=("Arial", 18)).grid(row=2, column=2, sticky="e")
+        ctk.CTkLabel(frame, text=str(round(self.z / 8)), font=("Arial", 18)).grid(row=2, column=3, padx=(0, 5), sticky="e")
 
         # Player field
         self.entry_var = ctk.StringVar(value=entered_name_on_widget)
 
-        ctk.CTkEntry(frame, textvariable=self.entry_var, placeholder_text="Enter Name").grid(
-            row=3, column=0, columnspan=2, padx=5, pady=(0, 5), sticky="w"
-        )
+        ctk.CTkEntry(frame, textvariable=self.entry_var, placeholder_text="Enter Name"
+        ).grid(row=3, column=0, columnspan=2, padx=5, pady=(0, 5), sticky="w")
 
         # Status combo
         status_box = ctk.CTkComboBox(

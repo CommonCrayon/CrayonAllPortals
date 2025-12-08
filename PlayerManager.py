@@ -39,8 +39,16 @@ class PlayerManager(ctk.CTkToplevel):
 
 
         # Number of players Button Set
-        self.num_players_button = ctk.CTkButton(player_num_frame, width=64, text="SET", font=("Arial", 18), command=self.set_player_number)
-        self.num_players_button.grid(row=0, column=2, sticky="w", padx=5, pady=5)
+        ctk.CTkButton(player_num_frame, width=64, text="SET", font=("Arial", 18), command=self.set_player_number).grid(row=0, column=2, sticky="w", padx=5, pady=5)
+
+
+        # Depth Label
+        depth_label = ctk.CTkLabel(player_num_frame, text="Depth of Path:", font=("Arial", 18))
+        depth_label.grid(row=0, column=3, sticky="w", padx=(10, 5), pady=5)
+
+        # Depth Entry
+        self.depth_entry = ctk.CTkEntry(player_num_frame, width=120, placeholder_text="Enter Depth", font=("Arial", 18))
+        self.depth_entry.grid(row=0, column=4, sticky="w", padx=(5, 10), pady=5)
 
         #======================================================================================================================
         # Player Stronghold Assigner
@@ -127,6 +135,16 @@ class PlayerManager(ctk.CTkToplevel):
             return
 
 
+        # Get Depth to make path
+        try:
+            depth = int(self.depth_entry.get())
+            if depth <= 0:
+                raise ValueError
+        except:
+            print("Invalid number of players.")
+            return
+        
+
         # Get strongholds left todo
         strongholds_todo = [sh for sh in self.stronghold_objects if sh.status_var.get() in ("Active", "Remaining")]
 
@@ -136,6 +154,10 @@ class PlayerManager(ctk.CTkToplevel):
 
         # Iterate over strongholds whilst popping the ones assigned
         while len(strongholds_todo) > 0:
+            # Only go to depth set
+            if (depth <= 0):
+                break
+
             for idx, player in enumerate(self.player_paths):
 
                 if len(strongholds_todo) == 0:
@@ -166,6 +188,8 @@ class PlayerManager(ctk.CTkToplevel):
                 # remove stronghold from future paths
                 strongholds_todo.pop(best_sh_i)
 
+            depth = depth - 1
+
         
         # Append path info to the existing player frames
         for idx, player_path in enumerate(self.player_paths):
@@ -191,11 +215,11 @@ class PlayerManager(ctk.CTkToplevel):
 
                 # X coordinate
                 x_var = ctk.StringVar(value=str(x))
-                ctk.CTkEntry(sh_frame, width=80, font=("Arial", 14), textvariable=x_var).grid(row=0, column=1, padx=2)
+                ctk.CTkEntry(sh_frame, width=80, font=("Arial", 14), textvariable=x_var, state="disabled").grid(row=0, column=1, padx=2)
 
                 # Z coordinate
                 z_var = ctk.StringVar(value=str(z))
-                ctk.CTkEntry(sh_frame, width=80, font=("Arial", 14), textvariable=z_var).grid(row=0, column=2, padx=2)
+                ctk.CTkEntry(sh_frame, width=80, font=("Arial", 14), textvariable=z_var, state="disabled").grid(row=0, column=2, padx=2)
 
                 row += 1
 
