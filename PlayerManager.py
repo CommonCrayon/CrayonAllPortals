@@ -10,6 +10,9 @@ class PlayerManager(ctk.CTkToplevel):
     def __init__(self, parent, stronghold_objects, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
 
+        # OVERRIDE the X button
+        self.protocol("WM_DELETE_WINDOW", self.withdraw)
+
         self.parent = parent
         self.stronghold_objects = stronghold_objects
         self.player_paths = [[[0, ""]]]

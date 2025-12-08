@@ -11,7 +11,6 @@
 
 
 # TODO
-- Closing and reopening Player Manager resets it.
 - Assign Name to Widget, from Player Manager
 - Add a counter next to stronghold ids in player manager
 

@@ -240,9 +240,10 @@ class App(ctk.CTk):
     
     def player_manager(self):
         if self.player_management_window is None or not self.player_management_window.winfo_exists():
-            self.player_management_window = PlayerManager(self, self.stronghold_objects)  # create window if its None or destroyed
+            self.player_management_window = PlayerManager(self, self.stronghold_objects)
         else:
-            self.player_management_window.focus()  # if window exists focus it
+            self.player_management_window.deiconify()
+            self.player_management_window.focus()
 
 
 
