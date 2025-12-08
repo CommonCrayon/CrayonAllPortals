@@ -108,11 +108,13 @@ class PlayerManager(ctk.CTkToplevel):
         ctk.CTkLabel(frame, text="Stronghold Ids:", font=("Arial", 18), anchor="w").grid(row=2, column=0, padx=5, pady=(15, 5), sticky="nesw")
 
         # Textbox for Stronghold Ids
-        ctk.CTkTextbox(frame, font=("Arial", 16)).grid(row=3, column=0, padx=5, pady=5, sticky="nesw")
+        textbox = ctk.CTkTextbox(frame, font=("Arial", 18))
+        textbox.grid(row=3, column=0, padx=5, pady=5, sticky="nesw")
+        textbox.bind("<KeyRelease>", lambda event: self.update_stronghold_ids(0))
 
-        # Update Button 
-        ctk.CTkButton(frame, text="Update", font=("Arial", 18), command=lambda i=0: self.update_stronghold_ids(0)
-            ).grid(row=4, column=0, padx=5, pady=(0, 5), sticky="nesw")
+        # # Update Button 
+        # ctk.CTkButton(frame, text="Update", font=("Arial", 18), command=lambda i=0: self.update_stronghold_ids(0)
+        #     ).grid(row=4, column=0, padx=5, pady=(0, 5), sticky="nesw")
 
 
 
@@ -158,12 +160,9 @@ class PlayerManager(ctk.CTkToplevel):
             ctk.CTkLabel(frame, text="Stronghold Ids:", font=("Arial", 18), anchor="w").grid(row=2, column=0, padx=5, pady=(15, 5), sticky="nesw")
 
             # Textbox for Stronghold Ids
-            ctk.CTkTextbox(frame, font=("Arial", 16)).grid(row=3, column=0, padx=5, pady=5, sticky="nesw")
-
-            # Update Button 
-            ctk.CTkButton(frame, text="Update", font=("Arial", 18), command=lambda i=i: self.update_stronghold_ids(i)
-                ).grid(row=4, column=0, padx=5, pady=(0, 5), sticky="nesw")
-            
+            textbox = ctk.CTkTextbox(frame, font=("Arial", 18))
+            textbox.grid(row=3, column=0, padx=5, pady=5, sticky="nesw")
+            textbox.bind("<KeyRelease>", lambda event, idx=i: self.update_stronghold_ids(idx))
 
         # Update Everything
         self.update_textbox()
@@ -226,7 +225,7 @@ class PlayerManager(ctk.CTkToplevel):
         self.player_paths[player_index] = new_path
 
         # Update Everything
-        self.update_textbox()
+        #self.update_textbox()
         self.draw_paths_on_canvas()
 
         

@@ -11,14 +11,16 @@
 
 
 # TODO
-- live updates
+- Closing and reopening Player Manager resets it.
+- Assign Name to Widget, from Player Manager
+- Add a counter next to stronghold ids in player manager
+
+- Generation Methods: Split by Pie, Do Closest First, Do Closest to Furtherest Zig Zag
+
+- Create text where it gives each player information of where to go.
 
 - Add Stronghold Number to Stronghold Object
-2. Split by Pie, Do Closest First, Do Closest to Furtherest Zig Zag
-3. Data Validation when clicking set on rings.
-4. Redraw paths on canvas resize
-5. Larger font on widgets
-6. Larger font for active, smaller for rest
+- Data Validation when clicking set on rings.
 
 
 # BUILD
