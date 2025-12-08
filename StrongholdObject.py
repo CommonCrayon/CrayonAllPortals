@@ -125,14 +125,6 @@ class StrongholdObject:
         img_x = int((self.x - WORLD_MIN) / WORLD_RANGE * side) + offset_x
         img_y = int((self.z - WORLD_MIN) / WORLD_RANGE * side) + offset_y
 
-        # Determine color based on status
-        color_map = {
-            "Active": "blue",
-            "Remaining": "red",
-            "Complete": "green"
-        }
-        dot_color = color_map.get(self.status_var.get(), "red")
-
         # Delete previous canvas items if any
         for item in self.canvas_items:
             try:
@@ -140,16 +132,41 @@ class StrongholdObject:
             except Exception:
                 pass
 
+
+        # Style presets by status
+        STATUS_STYLE = {
+            "Active": {
+                "color": "#1976D2",   # Strong readable blue
+                "text":  "#FFFFFF",
+                "font_size": 14,
+                "radius": 14,
+            },
+            "Remaining": {
+                "color": "#DC8D8C",   # Softer red, easy on the eyes
+                "text":  "#FFFFFF",
+                "font_size": 10,
+                "radius": 10,
+            },
+            "Complete": {
+                "color": "#43A047",   # Clean green
+                "text":  "#FFFFFF",
+                "font_size": 10,
+                "radius": 10,
+            },
+        }
+
+        # Get style for current status (fallback: Remaining)
+        status = self.status_var.get()
+        style = STATUS_STYLE.get(status, STATUS_STYLE["Remaining"])
+
+        dot_color  = style["color"]
+        font_size  = style["font_size"]
+        dot_radius = style["radius"]
+
+
         # Draw new dot and text
-        dot = self.app.canvas.create_oval(img_x-5, img_y-5, img_x+5, img_y+5, fill=dot_color, outline="")
-        text = self.app.canvas.create_text(
-            img_x + 10,
-            img_y,
-            text=str(STRONGHOLDS_RING_START[self.ring] + self.index),
-            fill="black",
-            anchor="w",
-            font=("Arial", 18)
-        )
+        dot = self.app.canvas.create_oval(img_x-dot_radius, img_y-dot_radius, img_x+dot_radius, img_y+dot_radius, fill=dot_color, outline="")
+        text = self.app.canvas.create_text(img_x, img_y, text=str(STRONGHOLDS_RING_START[self.ring] + self.index), fill="black", font=("Arial", font_size, 'bold'))
 
         self.canvas_items = [dot, text]
 

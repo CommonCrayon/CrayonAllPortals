@@ -11,7 +11,8 @@
 
 
 # TODO
-1. Add real method to update ordering of player
+- Add Stronghold Number to Stronghold Object
+- Add delete button to player path customisation
 2. Split by Pie, Do Closest First, Do Closest to Furtherest Zig Zag
 3. Data Validation when clicking set on rings.
 4. Redraw paths on canvas resize
