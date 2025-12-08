@@ -149,7 +149,7 @@ class PlayerManager(ctk.CTkToplevel):
         strongholds_todo = [sh for sh in self.stronghold_objects if sh.status_var.get() in ("Active", "Remaining")]
 
         # Intialise Player path
-        self.player_paths = [[["START", 0, 0]] for i in range(num_players)]
+        self.player_paths = [[[i, "Name TODO"]] for i in range(num_players)]
         players_last_position = [[0, 0] for i in range(num_players)]
 
         # Iterate over strongholds whilst popping the ones assigned
@@ -158,12 +158,11 @@ class PlayerManager(ctk.CTkToplevel):
             if (depth <= 0):
                 break
 
-            for idx, player in enumerate(self.player_paths):
-
+            for i in range(num_players):
                 if len(strongholds_todo) == 0:
                     break
 
-                current_player_location = players_last_position[idx]
+                current_player_location = players_last_position[i]
 
                 shortest_distance = float("inf")
                 best_sh_i = 0
@@ -180,17 +179,19 @@ class PlayerManager(ctk.CTkToplevel):
                 chosen_sh = strongholds_todo[best_sh_i]
 
                 # Append to Player Path
-                self.player_paths[idx].append([STRONGHOLDS_RING_START[chosen_sh.ring] + chosen_sh.index, chosen_sh.x, chosen_sh.z])
+                self.player_paths[i].append([STRONGHOLDS_RING_START[chosen_sh.ring] + chosen_sh.index, chosen_sh.x, chosen_sh.z])
 
                 # Update Last Player Position
-                players_last_position[idx] = [chosen_sh.x, chosen_sh.z]
+                players_last_position[i] = [chosen_sh.x, chosen_sh.z]
 
                 # remove stronghold from future paths
                 strongholds_todo.pop(best_sh_i)
 
             depth = depth - 1
 
-        
+        self.update_entries()
+
+    def update_entries(self):
         # Append path info to the existing player frames
         for idx, player_path in enumerate(self.player_paths):
             frame = self.scrollable_window.winfo_children()[idx]  # Get the frame for this player
@@ -202,9 +203,11 @@ class PlayerManager(ctk.CTkToplevel):
             ctk.CTkLabel(label_frame, width=80, text="X", font=("Arial", 18)).grid(row=2, column=1, sticky="ew")
             ctk.CTkLabel(label_frame, width=80, text="Z", font=("Arial", 18)).grid(row=2, column=2, sticky="ew")
 
+            player_vars = [] 
+
             # Start adding after labels
             row = 3
-            for sh_number, x, z in player_path:  # skip the START entry
+            for sh_number, x, z in player_path[1:]:
                 # Create a frame for each stronghold entry
                 sh_frame = ctk.CTkFrame(frame)
                 sh_frame.grid(row=row, column=0, sticky="w", padx=5, pady=2)
@@ -212,6 +215,7 @@ class PlayerManager(ctk.CTkToplevel):
                 # Stronghold number
                 sh_number_var = ctk.StringVar(value=str(sh_number))
                 ctk.CTkEntry(sh_frame, width=80, font=("Arial", 14), textvariable=sh_number_var).grid(row=0, column=0, padx=2)
+                player_vars.append(sh_number_var)
 
                 # X coordinate
                 x_var = ctk.StringVar(value=str(x))
@@ -229,7 +233,9 @@ class PlayerManager(ctk.CTkToplevel):
 
             button_frame.grid_columnconfigure(0, weight=1)
             button_frame.grid_rowconfigure(0, weight=1)
-            ctk.CTkButton(button_frame, text="Update").grid(row=0, column=0, sticky="nesw")
+            ctk.CTkButton(button_frame, text="Update", 
+                          command=lambda i=idx, vars=player_vars: self.update_player_path(i, vars)
+                ).grid(row=0, column=0, sticky="nesw")
 
 
     def draw_on_canvas(self):
@@ -253,12 +259,12 @@ class PlayerManager(ctk.CTkToplevel):
         colors = ["cyan", "magenta", "yellow", "orange", "purple"]
 
         # Iterate through each player's path
-        for i, path in enumerate(self.player_paths):
+        for idx, player_path in enumerate(self.player_paths):
 
-            color = colors[i % len(colors)]
+            color = colors[idx % len(colors)]
             prev_x, prev_y = None, None
             
-            for point in path:
+            for point in player_path[1:]:
                 x, y = point[1], point[2]
 
                 # Map world coordinates to canvas coordinates (inside the square image)
@@ -276,3 +282,28 @@ class PlayerManager(ctk.CTkToplevel):
         # Redraw canvas markers
         for sh in self.parent.stronghold_objects:
             sh.draw_on_canvas()
+
+
+    def update_player_path(self, player_index, player_entry):
+
+        new_path = [[player_index, "Name TODO"]] 
+
+        for entry in player_entry:
+            sh_id = int(entry.get())
+
+            # Look up SH object from stronghold_objects
+            sh = next((s for s in self.stronghold_objects if (STRONGHOLDS_RING_START[s.ring] + s.index) == sh_id), None)
+
+            if sh is None:
+                print(f"Stronghold {sh_id} not found!")
+                continue
+
+            # Use real coordinates from object
+            new_path.append([sh_id, sh.x, sh.z])
+
+        # Save back into main structure
+        self.player_paths[player_index] = new_path
+
+        self.update_entries()
+
+        
