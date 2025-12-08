@@ -108,7 +108,7 @@ class PlayerManager(ctk.CTkToplevel):
         ctk.CTkEntry(frame, placeholder_text="Name", font=("Arial", 18)).grid(row=1, column=0, padx=5, pady=(0,5), sticky="nesw")
 
         # Path by stronghold id
-        ctk.CTkLabel(frame, text="Stronghold Ids:", font=("Arial", 18), anchor="w").grid(row=2, column=0, padx=5, pady=(15, 5), sticky="nesw")
+        ctk.CTkLabel(frame, text="Stronghold Ids (0)", font=("Arial", 18), anchor="w").grid(row=2, column=0, padx=5, pady=(15, 5), sticky="nesw")
 
         # Textbox for Stronghold Ids
         textbox = ctk.CTkTextbox(frame, font=("Arial", 18))
@@ -194,6 +194,8 @@ class PlayerManager(ctk.CTkToplevel):
 
         name_entry = self.scrollable_window.winfo_children()[player_index].winfo_children()[1]
 
+        label_with_count = self.scrollable_window.winfo_children()[player_index].winfo_children()[2]
+
         # Get textbox for this player
         textbox = self.scrollable_window.winfo_children()[player_index].winfo_children()[3]
 
@@ -226,6 +228,8 @@ class PlayerManager(ctk.CTkToplevel):
 
         # Save back into main structure
         self.player_paths[player_index] = new_path
+
+        label_with_count.configure(text=f"Stronghold Ids ({len(stronghold_ids)})")
 
         # Update Everything
         #self.update_textbox()
