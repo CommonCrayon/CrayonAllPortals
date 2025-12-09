@@ -42,7 +42,7 @@ class PlayerManager(ctk.CTkToplevel):
 
 
         # Number of players Button Set
-        ctk.CTkButton(settings_frame, width=64, text="SET", font=("Arial", 18), command=self.set_player_number).grid(row=1, column=3, sticky="w", padx=5, pady=5)
+        ctk.CTkButton(settings_frame, width=64, text="SET", font=("Arial", 18), command=self.set_player_number).grid(row=1, column=3, sticky="nesw", padx=(5, 10), pady=5)
 
 
         # Draw on Canvas Checkbox
@@ -58,27 +58,32 @@ class PlayerManager(ctk.CTkToplevel):
             command=self.draw_paths_on_canvas
         )
 
-        self.draw_on_canvas_checkbox.grid(row=2, column=1, sticky="nesw", padx=5, pady=5)
+        self.draw_on_canvas_checkbox.grid(row=2, column=0, columnspan=2, sticky="nesw", padx=10, pady=10)
 
         #======================================================================================================================
         # Player Stronghold Assigner
         #======================================================================================================================
-        # auto_assigner_frame = ctk.CTkFrame(self)
-        # auto_assigner_frame.grid(row=0, column=1, sticky="nsew", padx=(5, 10), pady=10)
+        auto_assigner_frame = ctk.CTkFrame(self)
+        auto_assigner_frame.grid(row=0, column=1, sticky="nsew", padx=(5, 10), pady=10)
 
-        # ctk.CTkLabel(auto_assigner_frame, text="Path Generator", font=("Arial", 22)).grid(row=0, column=0, columnspan=2, sticky="nesw", padx=10, pady=10)
+        auto_assigner_frame.grid_columnconfigure(0, weight=1)
+        auto_assigner_frame.grid_columnconfigure(1, weight=1)
+
+        ctk.CTkLabel(auto_assigner_frame, text="Path Generator", font=("Arial", 22)).grid(row=0, column=0, columnspan=2, sticky="nesw", padx=10, pady=10)
 
 
-        # # Depth Label
-        # ctk.CTkLabel(auto_assigner_frame, text="Depth of Path:", font=("Arial", 18)).grid(row=1, column=0, sticky="w", padx=(10, 5), pady=5)
+        ctk.CTkComboBox(auto_assigner_frame, values=["Split by Pie", "Split by Closest"], font=("Arial", 18)).grid(row=1, column=0, columnspan=2, sticky="nesw", padx=10, pady=5)
 
-        # # Depth Entry
-        # self.depth_entry = ctk.CTkEntry(auto_assigner_frame, width=120, placeholder_text="Enter Depth", font=("Arial", 18))
-        # self.depth_entry.grid(row=1, column=1, sticky="w", padx=(5, 10), pady=5)
 
-        # # Generate a path and assign strongholds to players
-        # ctk.CTkButton(auto_assigner_frame, text="Generate Stronghold Assignments", font=("Arial", 18), command=self.assign_strongholds
-        #     ).grid(row=2, column=0, columnspan=2, sticky="w", padx=5, pady=5)
+        # Depth Label
+        ctk.CTkLabel(auto_assigner_frame, text="Depth of Path:", font=("Arial", 18)).grid(row=2, column=0, sticky="nesw", padx=(10, 5), pady=5)
+
+        # Depth Entry
+        self.depth_entry = ctk.CTkEntry(auto_assigner_frame, width=120, textvariable=ctk.StringVar(value="129"), font=("Arial", 18))
+        self.depth_entry.grid(row=2, column=1, sticky="nesw", padx=(5, 10), pady=5)
+
+        # Generate a path and assign strongholds to players
+        ctk.CTkButton(auto_assigner_frame, text="Generate", font=("Arial", 18), command=self.generate_path).grid(row=3, column=0, columnspan=2, sticky="nesw", padx=10, pady=10)
 
 
         #======================================================================================================================
@@ -289,3 +294,89 @@ class PlayerManager(ctk.CTkToplevel):
         # Redraw canvas markers
         for sh in self.parent.stronghold_objects:
             sh.draw_on_canvas()
+    
+
+
+    def generate_path(self):
+        # Get Number of players
+        try:
+            num_players = int(self.num_players_entry.get())
+            if num_players <= 0:
+                raise ValueError
+        except:
+            print("Invalid number of players.")
+            return
+
+        # Clear existing paths
+        new_paths = []
+        for i in range(num_players):
+            name_entry = self.scrollable_window.winfo_children()[i].winfo_children()[1]
+            player_name = str(name_entry.get())
+            new_paths.append([[i, player_name]])
+
+
+        # ANGLE SPLITTING
+        angle_per_player = 360 / num_players
+
+        for sh in self.parent.stronghold_objects:
+
+            # Skip if already complete
+            if sh.status_var.get() == "Complete":
+                continue
+
+            angle = sh.angle % 360  # Normalize
+
+            # Determine player index
+            player_index = int(angle // angle_per_player)
+            if player_index >= num_players:
+                player_index = num_players - 1
+
+            # Add stronghold to the player
+            new_paths[player_index].append([sh.number, sh.x, sh.z])
+
+
+
+        # Sort each player's strongholds by ID
+        for i in range(num_players):
+
+            sh_points = new_paths[i]
+            sh_points = self.tsp_sort(sh_points)
+            new_paths[i] = sh_points
+
+
+
+        # Save into main structure
+        self.player_paths = new_paths
+
+        # Update textboxes
+        self.update_textbox()
+
+        # Update counts in labels
+        for i in range(num_players):
+            count_label = self.scrollable_window.winfo_children()[i].winfo_children()[2]
+            count_label.configure(text=f"Stronghold Ids ({len(new_paths[i]) - 1})")
+
+        # Finally redraw paths
+        self.draw_paths_on_canvas()
+
+
+    def tsp_sort(self, points):
+        # nothing to sort, too little entries
+        if len(points) <= 2:  
+            return points
+
+        # First element is player info, leave it as is
+        player_info = points[0]
+        strongholds = points[1:]  # only sort strongholds
+
+        ordered = [strongholds.pop(0)]  # start from first stronghold
+
+        while strongholds:
+            last = ordered[-1]
+            last_x, last_z = last[1], last[2]
+            next_sh = min(strongholds, key=lambda p: (p[1] - last_x)**2 + (p[2] - last_z)**2)
+            strongholds.remove(next_sh)
+            ordered.append(next_sh)
+
+        return [player_info] + ordered
+

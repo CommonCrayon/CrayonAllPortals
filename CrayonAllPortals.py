@@ -235,12 +235,12 @@ class App(ctk.CTk):
             stronghold.destroy()
             self.stronghold_objects.remove(stronghold)
 
-        # Predict new strongholds
-        coords = []
+        # Magnitude of Ring
         magnitude = MAGNITUDE_PER_RING[ring_val]
-
-        # get the angle
         base_angle = np.arctan2(z_val, x_val)
+
+        # Predict new strongholds
+        new_strongholds = []
 
         for j in range(STRONGHOLDS_PER_RING[ring_val]):
             ang = base_angle + j * (2 * np.pi / STRONGHOLDS_PER_RING[ring_val])
@@ -248,14 +248,14 @@ class App(ctk.CTk):
             new_x = magnitude * np.cos(ang)
             new_z = magnitude * np.sin(ang)
 
-            coords.append((round(new_x), round(new_z)))
+            new_strongholds.append([round(new_x), round(new_z), round(np.degrees(ang))])
 
         # Fix first stronghold to be exact input
-        coords[0] = (x_val, z_val)
+        new_strongholds[0] = [x_val, z_val, round(np.degrees(base_angle))]
 
         # Create new StrongholdObject instances
-        for idx, (sx, sz) in enumerate(coords):
-            sh = StrongholdObject(app=self, ring=ring_val, index=idx, x=sx, z=sz)
+        for i, [x, z, angle] in enumerate(new_strongholds):
+            sh = StrongholdObject(app=self, ring=ring_val, index=i, x=x, z=z, angle=angle)
             self.stronghold_objects.append(sh)
 
 

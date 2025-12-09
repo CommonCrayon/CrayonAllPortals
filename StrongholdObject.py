@@ -7,14 +7,20 @@ WORLD_RANGE = WORLD_MAX - WORLD_MIN
 STRONGHOLDS_RING_START = [1, 4, 10, 20, 35, 56, 84, 120]
 
 class StrongholdObject:
-    def __init__(self, app, ring, index, x, z):
+    def __init__(self, app, ring, index, x, z, angle):
         self.app = app
-        self.x = x
-        self.z = z
 
+        # Number, Rings and Ids
         self.number = STRONGHOLDS_RING_START[ring] + index
         self.ring = ring
         self.ring_index = index
+
+        # Coords
+        self.x = x
+        self.z = z
+
+        # Angle
+        self.angle = angle
 
         self.entry_var = ctk.StringVar(value="")
 
