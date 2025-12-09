@@ -9,10 +9,12 @@ STRONGHOLDS_RING_START = [1, 4, 10, 20, 35, 56, 84, 120]
 class StrongholdObject:
     def __init__(self, app, ring, index, x, z):
         self.app = app
-        self.ring = ring
-        self.index = index
         self.x = x
         self.z = z
+
+        self.number = STRONGHOLDS_RING_START[ring] + index
+        self.ring = ring
+        self.ring_index = index
 
         self.entry_var = ctk.StringVar(value="")
 
@@ -22,7 +24,7 @@ class StrongholdObject:
         self.canvas_items = []  
 
         # Append to List
-        if (STRONGHOLDS_RING_START[ring] + index) in STRONGHOLDS_RING_START:
+        if (self.number) in STRONGHOLDS_RING_START:
             self.status_var = ctk.StringVar(value="Active")
             self.create_widget(parent=self.app.active_list)
         else:
@@ -63,7 +65,7 @@ class StrongholdObject:
         frame.grid_columnconfigure(3, weight=1)
 
         # ID label
-        ctk.CTkLabel(frame, text=str(STRONGHOLDS_RING_START[self.ring] + self.index), font=("Arial", 24)
+        ctk.CTkLabel(frame, text=str(self.number), font=("Arial", 24)
         ).grid(row=0, column=0, rowspan=3, padx=5, pady=5)
 
         # Overworld
@@ -166,7 +168,7 @@ class StrongholdObject:
 
         # Draw new dot and text
         dot = self.app.canvas.create_oval(img_x-dot_radius, img_y-dot_radius, img_x+dot_radius, img_y+dot_radius, fill=dot_color, outline="")
-        text = self.app.canvas.create_text(img_x, img_y, text=str(STRONGHOLDS_RING_START[self.ring] + self.index), fill="black", font=("Arial", font_size, 'bold'))
+        text = self.app.canvas.create_text(img_x, img_y, text=str(self.number), fill="black", font=("Arial", font_size, 'bold'))
 
         self.canvas_items = [dot, text]
 

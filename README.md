@@ -12,7 +12,6 @@
 
 # TODO
 - Assign Name to Widget, from Player Manager
-- Add a counter next to stronghold ids in player manager
 
 - Generation Methods: Split by Pie, Do Closest First, Do Closest to Furtherest Zig Zag
 

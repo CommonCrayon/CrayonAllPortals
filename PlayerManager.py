@@ -1,7 +1,5 @@
 import customtkinter as ctk
 
-STRONGHOLDS_RING_START = [1, 4, 10, 20, 35, 56, 84, 120]
-
 WORLD_MIN = -24320
 WORLD_MAX = 24320
 WORLD_RANGE = WORLD_MAX - WORLD_MIN
@@ -217,7 +215,7 @@ class PlayerManager(ctk.CTkToplevel):
         for stronghold_id in stronghold_ids:
 
             # Look up SH object from stronghold_objects
-            sh = next((sh for sh in self.stronghold_objects if (STRONGHOLDS_RING_START[sh.ring] + sh.index) == stronghold_id), None)
+            sh = next((sh for sh in self.stronghold_objects if sh.number == stronghold_id), None)
 
             if sh is None:
                 print(f"Stronghold {stronghold_id} not found!")
