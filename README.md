@@ -15,9 +15,6 @@
 
 - Create text where it gives each player information of where to go.
 
-- Data Validation when clicking set on rings.
-
-
 # BUILD
 
 ### Install Packages

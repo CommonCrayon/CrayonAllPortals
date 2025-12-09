@@ -1,7 +1,7 @@
 import customtkinter as ctk
 from PIL import Image, ImageTk
 import numpy as np
-import sys, os
+import sys, os, math
 
 from StrongholdObject import StrongholdObject
 from PlayerManager import PlayerManager
@@ -10,12 +10,13 @@ ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
 STRONGHOLDS_PER_RING = [3, 6, 10, 15, 21, 28, 36, 10]
+
 MAGNITUDE_PER_RING = [2048, 5120, 8192, 11264, 14336, 17408, 20480, 23552]
+BOUNDS_PER_RING = [(1280, 2816), (4352, 5888), (7424, 8960), (10496, 12032), (13568, 15104), (16640, 18176), (19712, 21248), (22784, 24320)]
+
 WORLD_MIN = -24320
 WORLD_MAX = 24320
 WORLD_RANGE = WORLD_MAX - WORLD_MIN
-
-
 
 def resource_path(relative):
     if hasattr(sys, "_MEIPASS"):
@@ -203,6 +204,28 @@ class App(ctk.CTk):
         ring_val = int(ring.get()) - 1
         x_val = int(x.get())
         z_val = int(z.get())
+
+        # Get current ring bounds
+        lower, upper = BOUNDS_PER_RING[ring_val]
+
+        # Compute distance from origin
+        distance = math.sqrt(x_val**2 + z_val**2)
+
+        # Check if distance within bounds. If not show error
+        if not (lower <= distance <= upper):
+
+            error_win = ctk.CTkToplevel(self)
+            error_win.title("Invalid Coordinates")
+            error_win.transient(self)
+            error_win.grab_set()
+
+            error_win.attributes("-topmost", True)
+
+            ctk.CTkLabel(error_win, text=f"{x_val} and {z_val} are NOT in bounds of Ring {ring_val+1}", text_color="red", font=("Arial", 18)).pack(padx=20, pady=20)
+
+            ctk.CTkButton(error_win, text="OK", command=error_win.destroy, font=("Arial", 18)).pack(pady=10)
+
+            return
 
         print(f"Updated Ring {ring_val+1} → X={x_val}, Z={z_val}")
 
