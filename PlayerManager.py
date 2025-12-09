@@ -103,7 +103,9 @@ class PlayerManager(ctk.CTkToplevel):
         ctk.CTkLabel(frame, text=f"Player 1", font=("Arial", 18)).grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
         # Player Name
-        ctk.CTkEntry(frame, placeholder_text="Name", font=("Arial", 18)).grid(row=1, column=0, padx=5, pady=(0,5), sticky="nesw")
+        player_name_entry = ctk.CTkEntry(frame, placeholder_text="Name", font=("Arial", 18))
+        player_name_entry.grid(row=1, column=0, padx=5, pady=(0,5), sticky="nesw")
+        player_name_entry.bind("<KeyRelease>", lambda event: self.update_stronghold_ids(0))
 
         # Path by stronghold id
         ctk.CTkLabel(frame, text="Stronghold Ids (0)", font=("Arial", 18), anchor="w").grid(row=2, column=0, padx=5, pady=(15, 5), sticky="nesw")
@@ -155,7 +157,9 @@ class PlayerManager(ctk.CTkToplevel):
             ctk.CTkLabel(frame, text=f"Player {i+1}", font=("Arial", 18)).grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
             # Player Name
-            ctk.CTkEntry(frame, placeholder_text="Name", font=("Arial", 18)).grid(row=1, column=0, padx=5, pady=(0,5), sticky="nesw")
+            player_name_entry = ctk.CTkEntry(frame, placeholder_text="Name", font=("Arial", 18))
+            player_name_entry.grid(row=1, column=0, padx=5, pady=(0,5), sticky="nesw")
+            player_name_entry.bind("<KeyRelease>", lambda event, idx=i: self.update_stronghold_ids(idx))
 
             # Path by stronghold id
             ctk.CTkLabel(frame, text="Stronghold Ids:", font=("Arial", 18), anchor="w").grid(row=2, column=0, padx=5, pady=(15, 5), sticky="nesw")
@@ -223,6 +227,8 @@ class PlayerManager(ctk.CTkToplevel):
 
             # Use real coordinates from object
             new_path.append([stronghold_id, sh.x, sh.z])
+
+            sh.update_name(str(name_entry.get()))
 
         # Save back into main structure
         self.player_paths[player_index] = new_path

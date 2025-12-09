@@ -11,13 +11,10 @@
 
 
 # TODO
-- Assign Name to Widget, from Player Manager
-
 - Generation Methods: Split by Pie, Do Closest First, Do Closest to Furtherest Zig Zag
 
 - Create text where it gives each player information of where to go.
 
-- Add Stronghold Number to Stronghold Object
 - Data Validation when clicking set on rings.
 
 

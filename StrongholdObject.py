@@ -38,14 +38,13 @@ class StrongholdObject:
     # Create widget in given parent container
     def create_widget(self, parent):
         # Store previous entry content if it exists
-        entered_name_on_widget = ""
+        widget_entry = ""
 
         # Destroy old widget and get data from it
         if self.widget_frame is not None:
             try:
                 # Try to get existing entry value
-                entry_widget = self.widget_frame.nametowidget(self.widget_frame.winfo_children()[-2])
-                entered_name_on_widget = entry_widget.get()
+                widget_entry = self.widget_frame.winfo_children()[7].get()
             except Exception:
                 pass
 
@@ -79,7 +78,7 @@ class StrongholdObject:
         ctk.CTkLabel(frame, text=str(round(self.z / 8)), font=("Arial", 18)).grid(row=2, column=3, padx=(0, 5), sticky="e")
 
         # Player field
-        self.entry_var = ctk.StringVar(value=entered_name_on_widget)
+        self.entry_var = ctk.StringVar(value=widget_entry)
 
         ctk.CTkEntry(frame, textvariable=self.entry_var, placeholder_text="Enter Name"
         ).grid(row=3, column=0, columnspan=2, padx=5, pady=(0, 5), sticky="w")
@@ -112,6 +111,13 @@ class StrongholdObject:
         self.create_widget(parent=target)
         self.draw_on_canvas()
 
+
+
+    def update_name(self, new_text):
+        # Get the entry widget
+        entry = self.widget_frame.winfo_children()[7]
+
+        entry.configure(textvariable=ctk.StringVar(value=new_text))
 
 
     # Draw on canvas
