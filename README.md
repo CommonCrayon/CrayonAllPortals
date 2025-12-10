@@ -13,8 +13,6 @@
 # TODO
 - Generation Methods: Split by Pie, Do Closest First, Do Closest to Furtherest Zig Zag
 
-- Create text where it gives each player information of where to go.
-
 # BUILD
 
 ### Install Packages

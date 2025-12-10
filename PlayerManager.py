@@ -71,19 +71,20 @@ class PlayerManager(ctk.CTkToplevel):
 
         ctk.CTkLabel(auto_assigner_frame, text="Path Generator", font=("Arial", 22)).grid(row=0, column=0, columnspan=2, sticky="nesw", padx=10, pady=10)
 
-
-        ctk.CTkComboBox(auto_assigner_frame, values=["Split by Pie", "Split by Closest"], font=("Arial", 18)).grid(row=1, column=0, columnspan=2, sticky="nesw", padx=10, pady=5)
-
+        # ctk.CTkComboBox(auto_assigner_frame, values=["Split by Pie", "Split by Closest"], font=("Arial", 18)).grid(row=1, column=0, columnspan=2, sticky="nesw", padx=10, pady=5)
 
         # Depth Label
-        ctk.CTkLabel(auto_assigner_frame, text="Depth of Path:", font=("Arial", 18)).grid(row=2, column=0, sticky="nesw", padx=(10, 5), pady=5)
+        ctk.CTkLabel(auto_assigner_frame, text="Depth of Path:", font=("Arial", 18)).grid(row=1, column=0, sticky="nesw", padx=(10, 5), pady=5)
 
         # Depth Entry
         self.depth_entry = ctk.CTkEntry(auto_assigner_frame, width=120, textvariable=ctk.StringVar(value="129"), font=("Arial", 18))
-        self.depth_entry.grid(row=2, column=1, sticky="nesw", padx=(5, 10), pady=5)
+        self.depth_entry.grid(row=1, column=1, sticky="nesw", padx=(5, 10), pady=5)
 
         # Generate a path and assign strongholds to players
-        ctk.CTkButton(auto_assigner_frame, text="Generate", font=("Arial", 18), command=self.generate_path).grid(row=3, column=0, columnspan=2, sticky="nesw", padx=10, pady=10)
+        ctk.CTkButton(auto_assigner_frame, text="Generate", font=("Arial", 18), command=self.generate_path).grid(row=2, column=0, columnspan=2, sticky="nesw", padx=10, pady=10)
+
+        # Copy to Clipboard
+        ctk.CTkButton(auto_assigner_frame, text="Copy to Clipboard", font=("Arial", 18), command=self.copy_paths_to_clipboard).grid(row=3, column=0, columnspan=2, sticky="nesw", padx=10, pady=10)
 
 
         #======================================================================================================================
@@ -379,4 +380,21 @@ class PlayerManager(ctk.CTkToplevel):
             ordered.append(next_sh)
 
         return [player_info] + ordered
+
+
+    def copy_paths_to_clipboard(self):
+        # Build the export text
+        export_text = "All Portals Paths\n"
+
+        for x in self.player_paths:
+            export_text += f'\n"{x[0][0]}:{x[0][1]}"\n'
+            for y in x[1:]:
+                export_text += f"[{y[0]},{y[1]},{y[2]}]\n"
+
+        # Copy to clipboard
+        self.clipboard_clear()
+        self.clipboard_append(export_text)
+
+        # Optional: notify the user (without messagebox spam)
+        print("Copied to clipboard!")
 
