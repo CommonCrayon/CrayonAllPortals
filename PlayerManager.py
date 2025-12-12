@@ -40,30 +40,20 @@ class PlayerManager(ctk.CTkToplevel):
         ctk.CTkLabel(settings_frame, text="Settings", font=("Arial", 22)).grid(row=0, column=0, columnspan=3, sticky="nesw", padx=10, pady=10)
 
 
-        ctk.CTkLabel(settings_frame, text="Number of Players:", font=("Arial", 18)).grid(row=1, column=0, sticky="w", padx=(10, 5), pady=5)
+        ctk.CTkLabel(settings_frame, text="Number of Players:", font=("Arial", 18)).grid(row=1, column=0, sticky="e", padx=(10, 5), pady=5)
         # Number of players entry box
         self.num_players_entry = ctk.CTkEntry(settings_frame, textvariable=ctk.StringVar(value="1"), font=("Arial", 18))
         self.num_players_entry.grid(row=1, column=1, sticky="w", padx=(5, 10), pady=5)
 
-
         # Number of players Button Set
-        ctk.CTkButton(settings_frame, width=64, text="SET", font=("Arial", 18), command=self.set_player_number).grid(row=1, column=3, sticky="nesw", padx=(5, 10), pady=5)
+        ctk.CTkButton(settings_frame, text="SET", font=("Arial", 18), command=self.set_player_number).grid(row=1, column=2, sticky="w", padx=(5, 10), pady=5)
 
 
         # Draw on Canvas Checkbox
         self.canvas_draw_bool = ctk.BooleanVar(value=True)
 
-        self.draw_on_canvas_checkbox = ctk.CTkCheckBox(
-            settings_frame,
-            text="Draw on Canvas",
-            font=("Arial", 18),
-            variable=self.canvas_draw_bool,
-            onvalue=True,
-            offvalue=False,
-            command=self.draw_paths_on_canvas
-        )
-
-        self.draw_on_canvas_checkbox.grid(row=2, column=0, columnspan=2, sticky="nesw", padx=10, pady=10)
+        self.draw_on_canvas_checkbox = ctk.CTkCheckBox(settings_frame, text="Draw on Canvas", font=("Arial", 18), variable=self.canvas_draw_bool, command=self.draw_paths_on_canvas)
+        self.draw_on_canvas_checkbox.grid(row=2, column=0, columnspan=3, sticky="nesw", padx=10, pady=10)
 
         #======================================================================================================================
         # Player Stronghold Assigner
@@ -196,7 +186,7 @@ class PlayerManager(ctk.CTkToplevel):
             # Get the textbox for this player
             textbox = self.scrollable_window.winfo_children()[idx].winfo_children()[3]
 
-            # Build comma-separated stronghold IDs
+            # create stronghold IDs list
             stronghold_ids = [str(sh_id) for sh_id, _, _ in player_path[1:]]
             textbox_text = ",".join(stronghold_ids)
 
