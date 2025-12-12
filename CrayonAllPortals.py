@@ -32,13 +32,13 @@ class App(ctk.CTk):
 
         self.title("Crayon All Portals")
 
-        self.geometry("1337x1080")
+        # ctk.deactivate_automatic_dpi_awareness()
+        # ctk.set_widget_scaling(1)  # widget dimensions and text size
+        # ctk.set_window_scaling(1)  # window geometry dimensions
 
-        ctk.deactivate_automatic_dpi_awareness()
-        ctk.set_widget_scaling(1)  # widget dimensions and text size
-        ctk.set_window_scaling(1)  # window geometry dimensions
+        self.geometry("1280x980")
 
-        self.stronghold_objects = []  # all stronghold objects
+        self.stronghold_objects = []
         self.image_size = 869 # Size of simple_rings.png
         self.player_management_window = None
 
