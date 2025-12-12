@@ -150,19 +150,19 @@ class StrongholdObject:
         # Style presets by status
         STATUS_STYLE = {
             "Active": {
-                "color": "#1976D2",   # Strong readable blue
+                "color": "#1976D2",
                 "text":  "#FFFFFF",
                 "font_size": 14,
                 "radius": 14,
             },
             "Remaining": {
-                "color": "#DC8D8C",   # Softer red, easy on the eyes
+                "color": "#DC8D8C",
                 "text":  "#FFFFFF",
                 "font_size": 10,
                 "radius": 10,
             },
             "Complete": {
-                "color": "#43A047",   # Clean green
+                "color": "#43A047",
                 "text":  "#FFFFFF",
                 "font_size": 10,
                 "radius": 10,

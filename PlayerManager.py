@@ -12,6 +12,7 @@ class PlayerManager(ctk.CTkToplevel):
         self.protocol("WM_DELETE_WINDOW", self.withdraw)
 
         self.parent = parent
+        self.num_of_players = 1
         self.stronghold_objects = stronghold_objects
         self.player_paths = [[[0, ""]]]
 
@@ -31,13 +32,17 @@ class PlayerManager(ctk.CTkToplevel):
         settings_frame = ctk.CTkFrame(self)
         settings_frame.grid(row=0, column=0, sticky="nsew", padx=(10, 5), pady=10)
 
+        settings_frame.grid_columnconfigure(0, weight=1)
+        settings_frame.grid_columnconfigure(1, weight=1)
+        settings_frame.grid_columnconfigure(2, weight=1)
+
 
         ctk.CTkLabel(settings_frame, text="Settings", font=("Arial", 22)).grid(row=0, column=0, columnspan=3, sticky="nesw", padx=10, pady=10)
 
 
         ctk.CTkLabel(settings_frame, text="Number of Players:", font=("Arial", 18)).grid(row=1, column=0, sticky="w", padx=(10, 5), pady=5)
         # Number of players entry box
-        self.num_players_entry = ctk.CTkEntry(settings_frame, width=120, textvariable=ctk.StringVar(value="1"), font=("Arial", 18))
+        self.num_players_entry = ctk.CTkEntry(settings_frame, textvariable=ctk.StringVar(value="1"), font=("Arial", 18))
         self.num_players_entry.grid(row=1, column=1, sticky="w", padx=(5, 10), pady=5)
 
 
@@ -136,23 +141,26 @@ class PlayerManager(ctk.CTkToplevel):
         except:
             print("Invalid number of players.")
             return
+        
+        # Set Num of Players in object
+        self.num_of_players = num_players
 
         current_players = len(self.scrollable_window.winfo_children())
 
         # Destroy widgets and Pop extra players
-        if num_players < current_players:
+        if self.num_of_players < current_players:
             # Destroy extra widgets
-            for widget in self.scrollable_window.winfo_children()[num_players:]:
+            for widget in self.scrollable_window.winfo_children()[self.num_of_players:]:
                 widget.destroy()
 
             # Remove extra player paths
-            while len(self.player_paths) > num_players:
-                self.player_paths.pop(num_players)
+            while len(self.player_paths) > self.num_of_players:
+                self.player_paths.pop(self.num_of_players)
 
 
 
         # Generate frames for new players if needed
-        for i in range(current_players, num_players):
+        for i in range(current_players, self.num_of_players):
             # Create a player path in index
             self.player_paths.append([[0, ""]])
 
@@ -299,25 +307,17 @@ class PlayerManager(ctk.CTkToplevel):
 
 
     def generate_path(self):
-        # Get Number of players
-        try:
-            num_players = int(self.num_players_entry.get())
-            if num_players <= 0:
-                raise ValueError
-        except:
-            print("Invalid number of players.")
-            return
 
         # Clear existing paths
         new_paths = []
-        for i in range(num_players):
+        for i in range(self.num_of_players):
             name_entry = self.scrollable_window.winfo_children()[i].winfo_children()[1]
             player_name = str(name_entry.get())
             new_paths.append([[i, player_name]])
 
 
         # ANGLE SPLITTING
-        angle_per_player = 360 / num_players
+        angle_per_player = 360 / self.num_of_players
 
         for sh in self.parent.stronghold_objects:
 
@@ -329,8 +329,8 @@ class PlayerManager(ctk.CTkToplevel):
 
             # Determine player index
             player_index = int(angle // angle_per_player)
-            if player_index >= num_players:
-                player_index = num_players - 1
+            if player_index >= self.num_of_players:
+                player_index = self.num_of_players - 1
 
             # Add stronghold to the player
             new_paths[player_index].append([sh.number, sh.x, sh.z])
@@ -338,7 +338,7 @@ class PlayerManager(ctk.CTkToplevel):
 
 
         # Sort each player's strongholds by ID
-        for i in range(num_players):
+        for i in range(self.num_of_players):
 
             sh_points = new_paths[i]
             sh_points = self.tsp_sort(sh_points)
@@ -353,7 +353,7 @@ class PlayerManager(ctk.CTkToplevel):
         self.update_textbox()
 
         # Update counts in labels
-        for i in range(num_players):
+        for i in range(self.num_of_players):
             count_label = self.scrollable_window.winfo_children()[i].winfo_children()[2]
             count_label.configure(text=f"Stronghold Ids ({len(new_paths[i]) - 1})")
 
@@ -366,11 +366,11 @@ class PlayerManager(ctk.CTkToplevel):
         if len(points) <= 2:  
             return points
 
-        # First element is player info, leave it as is
+        # only sort strongholds
         player_info = points[0]
-        strongholds = points[1:]  # only sort strongholds
+        strongholds = points[1:]  
 
-        ordered = [strongholds.pop(0)]  # start from first stronghold
+        ordered = [strongholds.pop(0)]
 
         while strongholds:
             last = ordered[-1]
@@ -395,6 +395,5 @@ class PlayerManager(ctk.CTkToplevel):
         self.clipboard_clear()
         self.clipboard_append(export_text)
 
-        # Optional: notify the user (without messagebox spam)
         print("Copied to clipboard!")
 

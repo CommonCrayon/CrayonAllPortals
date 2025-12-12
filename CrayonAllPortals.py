@@ -39,7 +39,7 @@ class App(ctk.CTk):
         ctk.set_window_scaling(1)  # window geometry dimensions
 
         self.stronghold_objects = []  # all stronghold objects
-        self.image_size = 869 # Size of Rings
+        self.image_size = 869 # Size of simple_rings.png
         self.player_management_window = None
 
         # Configure weight so scroll frames expand properly
@@ -75,7 +75,7 @@ class App(ctk.CTk):
             row_frame.grid_rowconfigure(0, weight=1)
             row_frame.grid_rowconfigure(1, weight=1)
 
-            # Label Title
+            # Ring
             ctk.CTkLabel(row_frame, text=f"Ring {i+1}", font=("Arial", 18)).grid(row=0, column=0, sticky="w", padx=(5, 0), pady=(5, 0))
 
             # blind label
