@@ -152,20 +152,20 @@ class StrongholdObject:
             "Active": {
                 "color": "#1976D2",
                 "text":  "#FFFFFF",
-                "font_size": 14,
-                "radius": 14,
+                "font_size": 18,
+                "radius": 18,
             },
             "Remaining": {
                 "color": "#DC8D8C",
                 "text":  "#FFFFFF",
-                "font_size": 10,
-                "radius": 10,
+                "font_size": 14,
+                "radius": 14,
             },
             "Complete": {
                 "color": "#43A047",
                 "text":  "#FFFFFF",
-                "font_size": 10,
-                "radius": 10,
+                "font_size": 14,
+                "radius": 14,
             },
         }
 
