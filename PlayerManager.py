@@ -278,7 +278,7 @@ class PlayerManager(ctk.CTkToplevel):
             for point in player_path[1:]:
                 x, y = point[1], point[2]
 
-                # Map world coordinates to canvas coordinates (inside the square image)
+                # Map world coordinates to canvas coordinates
                 img_x = int((x - WORLD_MIN) / WORLD_RANGE * side) + offset_x
                 img_y = int((y - WORLD_MIN) / WORLD_RANGE * side) + offset_y
 

@@ -70,8 +70,7 @@ class StrongholdObject:
         frame.grid_columnconfigure(3, weight=1)
 
         # ID label
-        ctk.CTkLabel(frame, text=str(self.number), font=("Arial", 24)
-        ).grid(row=0, column=0, rowspan=3, padx=5, pady=5)
+        ctk.CTkLabel(frame, text=str(self.number), font=("Arial", 24)).grid(row=0, column=0, rowspan=3, padx=5, pady=5)
 
         # Overworld
         ctk.CTkLabel(frame, text="Overworld", font=("Arial", 18)).grid(row=1, column=1, sticky="w", padx=5)
