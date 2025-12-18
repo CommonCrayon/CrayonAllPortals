@@ -2,32 +2,20 @@ import math
 from ortools.constraint_solver import pywrapcp, routing_enums_pb2
 
 OR_SCALE = 10_000
-TIME_PER_PATH = 10
 
 
-# you can get rid of spawn and just use points
-
-def make_stronghold_list(points: list[tuple]):
+def make_stronghold_list(points: list[tuple], time_per_path: int):
     
-    # strongholds
-    spawn = (0, 0)
-    coords = [spawn] + [(x, z) for _, x, z in points]
-    n = len(coords)
-
-
-    def dist(a, b):
-        return math.hypot(a[0] - b[0], a[1] - b[1])
-
-
+    # Add 0 0 coordinate for start origin
+    coords = [(-1, 0, 0)] + points
 
     # OR-Tools setup
     manager = pywrapcp.RoutingIndexManager(
-        n,
+        len(coords),
         1,  # one route
         0   # start at spawn
     )
     routing = pywrapcp.RoutingModel(manager)
-
 
 
     # True cost callback
@@ -37,9 +25,9 @@ def make_stronghold_list(points: list[tuple]):
 
         if from_node == to_node:
             return 0
-
-        return int(dist(coords[from_node], coords[to_node]) * OR_SCALE)
-
+        
+        distance = math.hypot(coords[from_node][1] - coords[to_node][1], coords[from_node][2] - coords[to_node][2])
+        return int(distance * OR_SCALE)
 
 
     transit_cb = routing.RegisterTransitCallback(arc_cost)
@@ -49,7 +37,8 @@ def make_stronghold_list(points: list[tuple]):
     params = pywrapcp.DefaultRoutingSearchParameters()
     params.first_solution_strategy = (routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
     params.local_search_metaheuristic = (routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
-    params.time_limit.seconds = TIME_PER_PATH
+    params.time_limit.seconds = time_per_path
+
 
     # Solve for best path
     solution = routing.SolveWithParameters(params)

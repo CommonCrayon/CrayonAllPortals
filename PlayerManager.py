@@ -69,12 +69,12 @@ class PlayerManager(ctk.CTkToplevel):
 
         # ctk.CTkComboBox(auto_assigner_frame, values=["Split by Pie", "Split by Closest"], font=("Arial", 18)).grid(row=1, column=0, columnspan=2, sticky="nesw", padx=10, pady=5)
 
-        # Depth Label
-        ctk.CTkLabel(auto_assigner_frame, text="Depth of Path:", font=("Arial", 18)).grid(row=1, column=0, sticky="nesw", padx=(10, 5), pady=5)
+        # Time Per Path Label
+        ctk.CTkLabel(auto_assigner_frame, text="Time Per Path:", font=("Arial", 18)).grid(row=1, column=0, sticky="nesw", padx=(10, 5), pady=5)
 
-        # Depth Entry
-        self.depth_entry = ctk.CTkEntry(auto_assigner_frame, width=120, textvariable=ctk.StringVar(value="129"), font=("Arial", 18))
-        self.depth_entry.grid(row=1, column=1, sticky="nesw", padx=(5, 10), pady=5)
+        # Time Entry
+        self.time_per_path_entry = ctk.CTkEntry(auto_assigner_frame, width=120, textvariable=ctk.StringVar(value="10"), font=("Arial", 18))
+        self.time_per_path_entry.grid(row=1, column=1, sticky="nesw", padx=(5, 10), pady=5)
 
         # Generate a path and assign strongholds to players
         ctk.CTkButton(auto_assigner_frame, text="Generate", font=("Arial", 18), command=self.generate_path).grid(row=2, column=0, columnspan=2, sticky="nesw", padx=10, pady=10)
@@ -327,6 +327,13 @@ class PlayerManager(ctk.CTkToplevel):
             new_paths[player_index].append([sh.number, sh.x, sh.z])
 
 
+        # Get time per path
+        time_per_path = 10
+        try:
+            time_per_path = int(self.time_per_path_entry.get())
+        except ValueError:
+            pass
+
 
         # Sort each player's strongholds by ID
         for i in range(self.num_of_players):
@@ -334,7 +341,7 @@ class PlayerManager(ctk.CTkToplevel):
             sh_points = new_paths[i]
             first_entry = sh_points[0]
 
-            sorted_strongholds = make_stronghold_list(sh_points[1:])
+            sorted_strongholds = make_stronghold_list(sh_points[1:], time_per_path)
             new_paths[i] = [first_entry] + sorted_strongholds
 
         # Save into main structure
