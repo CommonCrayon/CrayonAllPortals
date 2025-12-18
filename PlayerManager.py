@@ -197,8 +197,8 @@ class PlayerManager(ctk.CTkToplevel):
 
 
     def update_all_stronghold_ids(self):
-        for idx, player_path in enumerate(self.player_paths):
-            self.update_stronghold_ids(idx)
+        for i in range(len(self.player_paths)):
+            self.update_stronghold_ids(i)
 
     def update_stronghold_ids(self, player_index):
 
