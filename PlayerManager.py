@@ -196,6 +196,9 @@ class PlayerManager(ctk.CTkToplevel):
             textbox.insert("end", textbox_text)
 
 
+    def update_all_stronghold_ids(self):
+        for idx, player_path in enumerate(self.player_paths):
+            self.update_stronghold_ids(idx)
 
     def update_stronghold_ids(self, player_index):
 
@@ -354,6 +357,9 @@ class PlayerManager(ctk.CTkToplevel):
         for i in range(self.num_of_players):
             count_label = self.scrollable_window.winfo_children()[i].winfo_children()[2]
             count_label.configure(text=f"Stronghold Ids ({len(new_paths[i]) - 1})")
+
+        # Update all sh ids
+        self.update_all_stronghold_ids()
 
         # Finally redraw paths
         self.draw_paths_on_canvas()
