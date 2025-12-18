@@ -1,4 +1,5 @@
 import customtkinter as ctk
+from PathSolver import make_stronghold_list
 
 WORLD_MIN = -24320
 WORLD_MAX = 24320
@@ -331,10 +332,10 @@ class PlayerManager(ctk.CTkToplevel):
         for i in range(self.num_of_players):
 
             sh_points = new_paths[i]
-            sh_points = self.tsp_sort(sh_points)
-            new_paths[i] = sh_points
+            first_entry = sh_points[0]
 
-
+            sorted_strongholds = make_stronghold_list(sh_points[1:])
+            new_paths[i] = [first_entry] + sorted_strongholds
 
         # Save into main structure
         self.player_paths = new_paths
@@ -350,26 +351,6 @@ class PlayerManager(ctk.CTkToplevel):
         # Finally redraw paths
         self.draw_paths_on_canvas()
 
-
-    def tsp_sort(self, points):
-        # nothing to sort, too little entries
-        if len(points) <= 2:  
-            return points
-
-        # only sort strongholds
-        player_info = points[0]
-        strongholds = points[1:]  
-
-        ordered = [strongholds.pop(0)]
-
-        while strongholds:
-            last = ordered[-1]
-            last_x, last_z = last[1], last[2]
-            next_sh = min(strongholds, key=lambda p: (p[1] - last_x)**2 + (p[2] - last_z)**2)
-            strongholds.remove(next_sh)
-            ordered.append(next_sh)
-
-        return [player_info] + ordered
 
 
     def copy_paths_to_clipboard(self):
