@@ -160,7 +160,7 @@ class App(ctk.CTk):
         # Search variable
         self.active_search_var = ctk.StringVar()
         self.active_search_var.trace_add("write", self.filter_active_strongholds)
-        active_search_entry = ctk.CTkEntry(active_panel, textvariable=self.active_search_var, width=100, font=("Arial", 16))
+        active_search_entry = ctk.CTkEntry(active_panel, textvariable=self.active_search_var, width=64, font=("Arial", 16))
         active_search_entry.grid(row=0, column=1, sticky="ne", padx=5, pady=5)
 
         # List
@@ -183,7 +183,7 @@ class App(ctk.CTk):
         # Search variable
         self.remaining_search_var = ctk.StringVar()
         self.remaining_search_var.trace_add("write", self.filter_remaining_strongholds)
-        remaining_search_entry = ctk.CTkEntry(remaining_panel, textvariable=self.remaining_search_var, width=100, font=("Arial", 16))
+        remaining_search_entry = ctk.CTkEntry(remaining_panel, textvariable=self.remaining_search_var, width=64, font=("Arial", 16))
         remaining_search_entry.grid(row=0, column=1, sticky="ne", padx=5, pady=5)
 
         # List
@@ -206,7 +206,7 @@ class App(ctk.CTk):
         # Search variable
         self.complete_search_var = ctk.StringVar()
         self.complete_search_var.trace_add("write", self.filter_complete_strongholds)
-        complete_search_entry = ctk.CTkEntry(completed_panel, textvariable=self.complete_search_var, width=100, font=("Arial", 16))
+        complete_search_entry = ctk.CTkEntry(completed_panel, textvariable=self.complete_search_var, width=64, font=("Arial", 16))
         complete_search_entry.grid(row=0, column=1, sticky="ne", padx=5, pady=5)
 
         self.completed_list = ctk.CTkScrollableFrame(completed_panel, width=256)

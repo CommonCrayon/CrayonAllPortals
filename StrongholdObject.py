@@ -179,6 +179,9 @@ class StrongholdObject:
             except Exception:
                 pass
 
+        # Save latest entry var
+        self.entry_var = ctk.StringVar(value=str(self.widget_frame.winfo_children()[7].get()))
+
         # destroy widget
         if self.widget_frame is not None:
             try:
