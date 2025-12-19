@@ -270,7 +270,7 @@ class App(ctk.CTk):
         completed = len(self.completed_list.winfo_children())
 
         self.active_count.set(f"Active ({active})")
-        self.remaining_count.set(f"Remain({remaining})")
+        self.remaining_count.set(f"Remain ({remaining})")
         self.completed_count.set(f"Complete ({completed})")
 
     
