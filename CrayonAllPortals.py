@@ -172,7 +172,7 @@ class App(ctk.CTk):
         active_panel.grid_columnconfigure(1, weight=1)
 
         # ===== REMAINING STRONGHOLDS =====
-        self.remaining_count = ctk.StringVar(value="Remaining (0)")
+        self.remaining_count = ctk.StringVar(value="Remain (0)")
 
         remaining_panel = ctk.CTkFrame(self)
         remaining_panel.grid(row=1, column=1, sticky="nsew", padx=(0, 5), pady=(0, 10))
@@ -277,7 +277,7 @@ class App(ctk.CTk):
         completed = len(self.completed_list.winfo_children())
 
         self.active_count.set(f"Active ({active})")
-        self.remaining_count.set(f"Remaining ({remaining})")
+        self.remaining_count.set(f"Remain({remaining})")
         self.completed_count.set(f"Complete ({completed})")
 
     

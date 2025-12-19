@@ -96,6 +96,7 @@ class StrongholdObject:
             "Complete": self.app.completed_list,
         }[self.status_var.get()]
 
+        self.destroy()
         self.create_widget(target)
         self.app.update_counts()
         self.draw_on_canvas()
