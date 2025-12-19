@@ -226,88 +226,45 @@ class App(ctk.CTk):
         self.filter_active_strongholds()
         self.filter_complete_strongholds()
 
+
+
     def filter_remaining_strongholds(self, *_):
-        query = self.remaining_search_var.get().strip().lower()
-
-        # Check for Stronghold Number or Player Name
-        if not query:
-            filtered = self.remaining_strongholds
-        else:
-            if query.isdigit():
-                filtered = [
-                    s for s in self.remaining_strongholds
-                    if query in str(s.number)
-                ]
-            else:
-                filtered = [
-                    s for s in self.remaining_strongholds
-                    if query in s.entry_var.get().lower()
-                ]
-
-        # Clear existing widgets
-        for widget in self.remaining_list.winfo_children():
-            widget.destroy()
-
-        # Pack widgets
-        for sh in filtered:
-            sh.create_widget(self.remaining_list)
-
-
+        query = self.remaining_search_var.get().strip()
+        filtered = self.filter_strongholds(self.remaining_strongholds, query)
+        self.rebuild_list(self.remaining_list, self.remaining_strongholds, filtered)
 
     def filter_active_strongholds(self, *_):
-        query = self.active_search_var.get().strip().lower()
-
-        # Check for Stronghold Number or Player Name
-        if not query:
-            filtered = self.active_strongholds
-        else:
-            if query.isdigit():
-                filtered = [
-                    s for s in self.active_strongholds
-                    if query in str(s.number)
-                ]
-            else:
-                filtered = [
-                    s for s in self.active_strongholds
-                    if query in s.entry_var.get().lower()
-                ]
-
-
-        # Clear existing widgets
-        for widget in self.active_list.winfo_children():
-            widget.destroy()
-
-        # Pack widgets
-        for sh in filtered:
-            sh.create_widget(self.active_list)
-
+        query = self.active_search_var.get().strip()
+        filtered = self.filter_strongholds(self.active_strongholds, query)
+        self.rebuild_list(self.active_list, self.active_strongholds, filtered)
 
 
     def filter_complete_strongholds(self, *_):
-        query = self.complete_search_var.get().strip().lower()
+        query = self.complete_search_var.get().strip()
+        filtered = self.filter_strongholds(self.completed_strongholds, query)
+        self.rebuild_list(self.completed_list, self.completed_strongholds, filtered)
 
-        # Check for Stronghold Number or Player Name
+
+
+    def filter_strongholds(self, strongholds, query):
         if not query:
-            filtered = self.completed_strongholds
+            return strongholds
+
+        q = query.lower()
+
+        if q.isdigit():
+            return [s for s in strongholds if q in str(s.number)]
         else:
-            if query.isdigit():
-                filtered = [
-                    s for s in self.completed_strongholds
-                    if query in str(s.number)
-                ]
+            return [s for s in strongholds if q in s.entry_var.get().lower()]
+
+    def rebuild_list(self, parent, strongholds, filtered):
+        filtered_set = set(filtered)
+
+        for sh in strongholds:
+            if sh in filtered_set:
+                sh.widget_frame.pack(fill="x")
             else:
-                filtered = [
-                    s for s in self.completed_strongholds
-                    if query in s.entry_var.get().lower()
-                ]
-
-        # Clear existing widgets
-        for widget in self.completed_list.winfo_children():
-            widget.destroy()
-
-        # Pack widgets
-        for sh in filtered:
-            sh.create_widget(self.completed_list)
+                sh.widget_frame.pack_forget()
 
     #==========================================================================================
     # 

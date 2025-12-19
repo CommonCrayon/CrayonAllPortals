@@ -8,36 +8,35 @@ STRONGHOLDS_RING_START = [1, 4, 10, 20, 35, 56, 84, 120]
 
 class StrongholdObject:
     def __init__(self, app, ring, index, x, z, angle):
+
         self.app = app
 
-        # Number, Rings and Ids
         self.number = STRONGHOLDS_RING_START[ring] + index
         self.ring = ring
         self.ring_index = index
 
-        # Coords
         self.x = x
         self.z = z
-
-        # Angle
         self.angle = angle
 
         self.entry_var = ctk.StringVar(value="")
+        self.status_var = ctk.StringVar()
 
         self.widget_frame = None
-
-        # store canvas IDs so we can delete later
-        self.canvas_items = []  
+        self.entry_widget = None
+        self.canvas_items = []
 
         # Append to List
-        if (self.number) in STRONGHOLDS_RING_START:
-            self.status_var = ctk.StringVar(value="Active")
+        if self.number in STRONGHOLDS_RING_START:
+            self.status_var.set("Active")
             self.app.active_strongholds.append(self)
-
+            parent = self.app.active_list
         else:
-            self.status_var = ctk.StringVar(value="Remaining")
+            self.status_var.set("Remaining")
             self.app.remaining_strongholds.append(self)
-
+            parent = self.app.remaining_list
+        
+        self.create_widget(parent)
         self.app.update_counts()
         self.draw_on_canvas()
 
@@ -45,76 +44,60 @@ class StrongholdObject:
 
     # Create widget in given parent container
     def create_widget(self, parent):
-        # Store previous entry content if it exists
-        widget_entry = ""
+        if self.widget_frame is None:
+            frame = ctk.CTkFrame(parent)
+            self.widget_frame = frame
 
-        # Destroy old widget and get data from it
-        if self.widget_frame is not None:
-            try:
-                # Try to get existing entry value
-                widget_entry = self.widget_frame.winfo_children()[7].get()
-            except Exception:
-                pass
+            # layout config
+            frame.grid_columnconfigure(0, minsize=48)
+            frame.grid_columnconfigure(1, weight=1)
+            frame.grid_columnconfigure(2, weight=1)
+            frame.grid_columnconfigure(3, weight=1)
 
-            try:
-                self.widget_frame.destroy()
-            except Exception:
-                pass
+            # ID label
+            ctk.CTkLabel(frame, text=str(self.number), font=("Arial", 24)).grid(row=0, column=0, rowspan=3, padx=5, pady=5)
+
+            # Overworld
+            ctk.CTkLabel(frame, text="Overworld", font=("Arial", 18)).grid(row=1, column=1, sticky="w", padx=5)
+            ctk.CTkLabel(frame, text=str(self.x), font=("Arial", 18)).grid(row=1, column=2, sticky="e")
+            ctk.CTkLabel(frame, text=str(self.z), font=("Arial", 18)).grid(row=1, column=3, padx=(0, 5), sticky="e")
+
+            # Nether
+            ctk.CTkLabel(frame, text="Nether", font=("Arial", 18)).grid(row=2, column=1, sticky="w", padx=5)
+            ctk.CTkLabel(frame, text=str(round(self.x / 8)), font=("Arial", 18)).grid(row=2, column=2, sticky="e")
+            ctk.CTkLabel(frame, text=str(round(self.z / 8)), font=("Arial", 18)).grid(row=2, column=3, padx=(0, 5), sticky="e")
+
+            # Player field
+            ctk.CTkEntry(frame, textvariable=self.entry_var, placeholder_text="Enter Name"
+            ).grid(row=3, column=0, columnspan=2, padx=5, pady=(0, 5), sticky="w")
+
+            # Status combo
+            status_box = ctk.CTkComboBox(
+                frame,
+                values=["Active", "Remaining", "Complete"],
+                state="readonly",
+                variable=self.status_var,
+                command=self.on_status_change
+            )
+            status_box.grid(row=3, column=2, columnspan=2, padx=5, pady=(0, 5), sticky="ew")
 
 
-        frame = ctk.CTkFrame(parent)
-        self.widget_frame = frame
-
-        # layout config
-        frame.grid_columnconfigure(0, minsize=48)
-        frame.grid_columnconfigure(1, weight=1)
-        frame.grid_columnconfigure(2, weight=1)
-        frame.grid_columnconfigure(3, weight=1)
-
-        # ID label
-        ctk.CTkLabel(frame, text=str(self.number), font=("Arial", 24)).grid(row=0, column=0, rowspan=3, padx=5, pady=5)
-
-        # Overworld
-        ctk.CTkLabel(frame, text="Overworld", font=("Arial", 18)).grid(row=1, column=1, sticky="w", padx=5)
-        ctk.CTkLabel(frame, text=str(self.x), font=("Arial", 18)).grid(row=1, column=2, sticky="e")
-        ctk.CTkLabel(frame, text=str(self.z), font=("Arial", 18)).grid(row=1, column=3, padx=(0, 5), sticky="e")
-
-        # Nether
-        ctk.CTkLabel(frame, text="Nether", font=("Arial", 18)).grid(row=2, column=1, sticky="w", padx=5)
-        ctk.CTkLabel(frame, text=str(round(self.x / 8)), font=("Arial", 18)).grid(row=2, column=2, sticky="e")
-        ctk.CTkLabel(frame, text=str(round(self.z / 8)), font=("Arial", 18)).grid(row=2, column=3, padx=(0, 5), sticky="e")
-
-        # Player field
-        self.entry_var = ctk.StringVar(value=widget_entry)
-
-        ctk.CTkEntry(frame, textvariable=self.entry_var, placeholder_text="Enter Name"
-        ).grid(row=3, column=0, columnspan=2, padx=5, pady=(0, 5), sticky="w")
-
-        # Status combo
-        status_box = ctk.CTkComboBox(
-            frame,
-            values=["Active", "Remaining", "Complete"],
-            state="readonly",
-            variable=self.status_var,
-            command=self.on_status_change
-        )
-        status_box.grid(row=3, column=2, columnspan=2, padx=5, pady=(0, 5), sticky="ew")
-
-        frame.pack(fill="x", pady=2, padx=2)
+        # Re-parent safely
+        self.widget_frame.pack_forget()
+        self.widget_frame.pack(in_=parent, fill="x", pady=2, padx=2)
 
 
 
     # Update on status change
-    def on_status_change(self, *args):
-        new_status = self.status_var.get()
+    def on_status_change(self, *_):
         target = {
             "Active": self.app.active_list,
             "Remaining": self.app.remaining_list,
             "Complete": self.app.completed_list,
-        }[new_status]
+        }[self.status_var.get()]
 
+        self.create_widget(target)
         self.app.update_counts()
-        self.create_widget(parent=target)
         self.draw_on_canvas()
 
 
