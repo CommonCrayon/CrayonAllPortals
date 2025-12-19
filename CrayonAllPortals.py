@@ -160,8 +160,8 @@ class App(ctk.CTk):
         # Search variable
         self.active_search_var = ctk.StringVar()
         self.active_search_var.trace_add("write", self.filter_active_strongholds)
-        active_search_entry = ctk.CTkEntry(active_panel, textvariable=self.active_search_var, font=("Arial", 16))
-        active_search_entry.grid(row=0, column=1, sticky="nw", padx=5, pady=5)
+        active_search_entry = ctk.CTkEntry(active_panel, textvariable=self.active_search_var, width=100, font=("Arial", 16))
+        active_search_entry.grid(row=0, column=1, sticky="ne", padx=5, pady=5)
 
         # List
         self.active_list = ctk.CTkScrollableFrame(active_panel, width=256)
@@ -183,8 +183,8 @@ class App(ctk.CTk):
         # Search variable
         self.remaining_search_var = ctk.StringVar()
         self.remaining_search_var.trace_add("write", self.filter_remaining_strongholds)
-        remaining_search_entry = ctk.CTkEntry(remaining_panel, textvariable=self.remaining_search_var, font=("Arial", 16))
-        remaining_search_entry.grid(row=0, column=1, sticky="nw", padx=5, pady=5)
+        remaining_search_entry = ctk.CTkEntry(remaining_panel, textvariable=self.remaining_search_var, width=100, font=("Arial", 16))
+        remaining_search_entry.grid(row=0, column=1, sticky="ne", padx=5, pady=5)
 
         # List
         self.remaining_list = ctk.CTkScrollableFrame(remaining_panel, width=256)
@@ -206,8 +206,8 @@ class App(ctk.CTk):
         # Search variable
         self.complete_search_var = ctk.StringVar()
         self.complete_search_var.trace_add("write", self.filter_complete_strongholds)
-        complete_search_entry = ctk.CTkEntry(completed_panel, textvariable=self.complete_search_var, font=("Arial", 16))
-        complete_search_entry.grid(row=0, column=1, sticky="nw", padx=5, pady=5)
+        complete_search_entry = ctk.CTkEntry(completed_panel, textvariable=self.complete_search_var, width=100, font=("Arial", 16))
+        complete_search_entry.grid(row=0, column=1, sticky="ne", padx=5, pady=5)
 
         self.completed_list = ctk.CTkScrollableFrame(completed_panel, width=256)
         self.completed_list.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
@@ -221,28 +221,21 @@ class App(ctk.CTk):
     # STRONGHOLD FILTERS
     #==========================================================================================
 
-    def refresh_all_lists(self):
-        self.filter_remaining_strongholds()
-        self.filter_active_strongholds()
-        self.filter_complete_strongholds()
-
-
-
     def filter_remaining_strongholds(self, *_):
         query = self.remaining_search_var.get().strip()
         filtered = self.filter_strongholds(self.remaining_strongholds, query)
-        self.rebuild_list(self.remaining_list, self.remaining_strongholds, filtered)
+        self.rebuild_list("Remaining", self.remaining_strongholds, filtered)
 
     def filter_active_strongholds(self, *_):
         query = self.active_search_var.get().strip()
         filtered = self.filter_strongholds(self.active_strongholds, query)
-        self.rebuild_list(self.active_list, self.active_strongholds, filtered)
+        self.rebuild_list("Active", self.active_strongholds, filtered)
 
 
     def filter_complete_strongholds(self, *_):
         query = self.complete_search_var.get().strip()
         filtered = self.filter_strongholds(self.completed_strongholds, query)
-        self.rebuild_list(self.completed_list, self.completed_strongholds, filtered)
+        self.rebuild_list("Complete", self.completed_strongholds, filtered)
 
 
 
@@ -257,10 +250,15 @@ class App(ctk.CTk):
         else:
             return [s for s in strongholds if q in s.entry_var.get().lower()]
 
-    def rebuild_list(self, parent, strongholds, filtered):
+
+    def rebuild_list(self, list_type, strongholds, filtered):
         filtered_set = set(filtered)
 
         for sh in strongholds:
+            # If not in list, then do not unpack or pack
+            if (str(sh.status_var.get()) != list_type):
+                continue
+
             if sh in filtered_set:
                 sh.widget_frame.pack(fill="x")
             else:
@@ -341,7 +339,9 @@ class App(ctk.CTk):
             self.stronghold_objects.append(sh)
 
         # Refresh Lists
-        self.refresh_all_lists()
+        self.filter_remaining_strongholds()
+        self.filter_active_strongholds()
+        self.filter_complete_strongholds()
 
     
     def player_manager(self):
