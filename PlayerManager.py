@@ -20,7 +20,7 @@ class PlayerManager(ctk.CTkToplevel):
         self.attributes("-topmost", True)
         self.title("Player Manager")
 
-        self.geometry("800x600")
+        self.geometry("930x630")
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
@@ -117,9 +117,9 @@ class PlayerManager(ctk.CTkToplevel):
         textbox.grid(row=3, column=0, padx=5, pady=5, sticky="nesw")
         textbox.bind("<KeyRelease>", lambda event: self.update_stronghold_ids(0))
 
-        # # Update Button 
-        # ctk.CTkButton(frame, text="Update", font=("Arial", 18), command=lambda i=0: self.update_stronghold_ids(0)
-        #     ).grid(row=4, column=0, padx=5, pady=(0, 5), sticky="nesw")
+        # Complete All Button 
+        ctk.CTkButton(frame, text="Complete All", font=("Arial", 18), command=lambda i=0: self.complete_all_strongholds(0)
+            ).grid(row=4, column=0, padx=5, pady=(0, 5), sticky="nesw")
 
 
 
@@ -173,6 +173,11 @@ class PlayerManager(ctk.CTkToplevel):
             textbox = ctk.CTkTextbox(frame, font=("Arial", 18))
             textbox.grid(row=3, column=0, padx=5, pady=5, sticky="nesw")
             textbox.bind("<KeyRelease>", lambda event, idx=i: self.update_stronghold_ids(idx))
+
+            # Complete All Button 
+            ctk.CTkButton(frame, text="Complete All", font=("Arial", 18), command=lambda idx=i: self.complete_all_strongholds(idx)
+                ).grid(row=4, column=0, padx=5, pady=(0, 5), sticky="nesw")
+
 
         # Update Everything
         self.update_textbox()
@@ -246,6 +251,14 @@ class PlayerManager(ctk.CTkToplevel):
         # Update Everything
         #self.update_textbox()
         self.draw_paths_on_canvas()
+
+
+
+    def complete_all_strongholds(self, player_index):
+        for stronghold_id, _, _ in self.player_paths[player_index][1:]:
+            sh = next((sh for sh in self.stronghold_objects if sh.number == stronghold_id), None)
+
+            sh.set_status("Complete")
 
         
 

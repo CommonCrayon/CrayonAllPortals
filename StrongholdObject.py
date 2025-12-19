@@ -101,6 +101,20 @@ class StrongholdObject:
         self.app.update_counts()
         self.draw_on_canvas()
 
+    # Sets the status of a widget
+    def set_status(self, target_name):
+        setList = self.app.remaining_list
+
+        if target_name == "Active":
+            setList = self.app.active_list
+        elif target_name == "Complete":
+            setList = self.app.completed_list
+
+        self.destroy()
+        self.create_widget(setList)
+        self.status_var.set(target_name)
+        self.app.update_counts()
+        self.draw_on_canvas()
 
 
     def update_name(self, new_text):
