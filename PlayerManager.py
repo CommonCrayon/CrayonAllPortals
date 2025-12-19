@@ -27,6 +27,8 @@ class PlayerManager(ctk.CTkToplevel):
 
         self.grid_rowconfigure(1, weight=1)
 
+        self.colors = ["cyan", "magenta", "yellow", "orange", "purple", "red", "blue", "green", "brown", "pink", "lime", "navy", "teal", "gold"]
+
         #======================================================================================================================
         # Settings Frame
         #======================================================================================================================
@@ -67,8 +69,6 @@ class PlayerManager(ctk.CTkToplevel):
 
         ctk.CTkLabel(auto_assigner_frame, text="Path Generator", font=("Arial", 22)).grid(row=0, column=0, columnspan=2, sticky="nesw", padx=10, pady=10)
 
-        # ctk.CTkComboBox(auto_assigner_frame, values=["Split by Pie", "Split by Closest"], font=("Arial", 18)).grid(row=1, column=0, columnspan=2, sticky="nesw", padx=10, pady=5)
-
         # Time Per Path Label
         ctk.CTkLabel(auto_assigner_frame, text="Time Per Path:", font=("Arial", 18)).grid(row=1, column=0, sticky="nesw", padx=(10, 5), pady=5)
 
@@ -102,7 +102,7 @@ class PlayerManager(ctk.CTkToplevel):
         frame.grid(row=0, column=0, pady=5, padx=5, sticky="nsw")
 
         # Player Id
-        ctk.CTkLabel(frame, text=f"Player 1", font=("Arial", 18)).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        ctk.CTkLabel(frame, text=f"Player 1", font=("Arial", 18), text_color=self.colors[0]).grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
         # Player Name
         player_name_entry = ctk.CTkEntry(frame, placeholder_text="Name", font=("Arial", 18))
@@ -159,7 +159,7 @@ class PlayerManager(ctk.CTkToplevel):
             frame.grid(row=0, column=i, pady=5, padx=5, sticky="nsw")
 
             # Player Id
-            ctk.CTkLabel(frame, text=f"Player {i+1}", font=("Arial", 18)).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+            ctk.CTkLabel(frame, text=f"Player {i+1}", font=("Arial", 18), text_color=self.colors[i]).grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
             # Player Name
             player_name_entry = ctk.CTkEntry(frame, placeholder_text="Name", font=("Arial", 18))
@@ -284,12 +284,10 @@ class PlayerManager(ctk.CTkToplevel):
         offset_x = (self.parent.canvas.winfo_width() - side) // 2
         offset_y = (self.parent.canvas.winfo_height() - side) // 2
 
-        colors = ["cyan", "magenta", "yellow", "orange", "purple"]
-
         # Iterate through each player's path
         for idx, player_path in enumerate(self.player_paths):
 
-            color = colors[idx % len(colors)]
+            color = self.colors[idx % len(self.colors)]
             prev_x, prev_y = None, None
             
             for point in player_path[1:]:
