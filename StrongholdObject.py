@@ -32,11 +32,13 @@ class StrongholdObject:
         # Append to List
         if (self.number) in STRONGHOLDS_RING_START:
             self.status_var = ctk.StringVar(value="Active")
-            self.create_widget(parent=self.app.active_list)
+            self.app.active_strongholds.append(self)
+
         else:
             self.status_var = ctk.StringVar(value="Remaining")
-            self.create_widget(parent=self.app.remaining_list)
+            self.app.remaining_strongholds.append(self)
 
+        self.app.update_counts()
         self.draw_on_canvas()
 
 
@@ -99,7 +101,6 @@ class StrongholdObject:
         status_box.grid(row=3, column=2, columnspan=2, padx=5, pady=(0, 5), sticky="ew")
 
         frame.pack(fill="x", pady=2, padx=2)
-        self.app.update_counts()
 
 
 

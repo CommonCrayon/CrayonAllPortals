@@ -52,6 +52,12 @@ class App(ctk.CTk):
         self.grid_rowconfigure(1, weight=1)
 
 
+        # Stronghold lists
+        self.remaining_strongholds = []
+        self.active_strongholds = []
+        self.completed_strongholds = []
+
+
         #======================================================================================================================
         # Stronghold Ring Reference
         #======================================================================================================================
@@ -142,51 +148,170 @@ class App(ctk.CTk):
         #======================================================================================================================
         # Strongholds List Panels
         #======================================================================================================================
-        # ACTIVE STRONGHOLDS
-        self.active_count = ctk.StringVar(value="Active Strongholds (0)")
+        # ===== ACTIVE STRONGHOLDS =====
+        self.active_count = ctk.StringVar(value="Active (0)")
 
         active_panel = ctk.CTkFrame(self)
         active_panel.grid(row=0, column=3, rowspan=2, sticky="nsew", padx=10, pady=10)
 
         active_label = ctk.CTkLabel(active_panel, textvariable=self.active_count, font=("Arial", 20))
-        active_label.grid(row=0, column=0, sticky="new", padx=5, pady=5)
+        active_label.grid(row=0, column=0, sticky="ne", padx=5, pady=5)
 
+        # Search variable
+        self.active_search_var = ctk.StringVar()
+        self.active_search_var.trace_add("write", self.filter_active_strongholds)
+        active_search_entry = ctk.CTkEntry(active_panel, textvariable=self.active_search_var, font=("Arial", 16))
+        active_search_entry.grid(row=0, column=1, sticky="nw", padx=5, pady=5)
+
+        # List
         self.active_list = ctk.CTkScrollableFrame(active_panel, width=256)
-        self.active_list.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
+        self.active_list.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
 
         active_panel.grid_rowconfigure(1, weight=1)
         active_panel.grid_columnconfigure(0, weight=1)
+        active_panel.grid_columnconfigure(1, weight=1)
 
-        # REMAINING STRONGHOLDS
-        self.remaining_count = ctk.StringVar(value="Remaining Strongholds (0)")
+        # ===== REMAINING STRONGHOLDS =====
+        self.remaining_count = ctk.StringVar(value="Remaining (0)")
 
         remaining_panel = ctk.CTkFrame(self)
         remaining_panel.grid(row=1, column=1, sticky="nsew", padx=(0, 5), pady=(0, 10))
 
         remaining_label = ctk.CTkLabel(remaining_panel, textvariable=self.remaining_count, font=("Arial", 20))
-        remaining_label.grid(row=0, column=0, sticky="new", padx=5, pady=5)
+        remaining_label.grid(row=0, column=0, sticky="ne", padx=5, pady=5)
 
+        # Search variable
+        self.remaining_search_var = ctk.StringVar()
+        self.remaining_search_var.trace_add("write", self.filter_remaining_strongholds)
+        remaining_search_entry = ctk.CTkEntry(remaining_panel, textvariable=self.remaining_search_var, font=("Arial", 16))
+        remaining_search_entry.grid(row=0, column=1, sticky="nw", padx=5, pady=5)
+
+        # List
         self.remaining_list = ctk.CTkScrollableFrame(remaining_panel, width=256)
-        self.remaining_list.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
+        self.remaining_list.grid(row=2, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
 
-        remaining_panel.grid_rowconfigure(1, weight=1)
+        remaining_panel.grid_rowconfigure(2, weight=1)
         remaining_panel.grid_columnconfigure(0, weight=1)
+        remaining_panel.grid_columnconfigure(1, weight=1)
 
-        # COMPLETED STRONGHOLDS
-        self.completed_count = ctk.StringVar(value="Completed Strongholds (0)")
+        # ===== COMPLETED STRONGHOLDS =====
+        self.completed_count = ctk.StringVar(value="Complete (0)")
 
         completed_panel = ctk.CTkFrame(self)
         completed_panel.grid(row=1, column=2, sticky="nsew", padx=(5, 0), pady=(0, 10))
 
         completed_label = ctk.CTkLabel(completed_panel, textvariable=self.completed_count, font=("Arial", 20))
-        completed_label.grid(row=0, column=0, sticky="new", padx=5, pady=5)
+        completed_label.grid(row=0, column=0, sticky="ne", padx=5, pady=5)
+
+        # Search variable
+        self.complete_search_var = ctk.StringVar()
+        self.complete_search_var.trace_add("write", self.filter_complete_strongholds)
+        complete_search_entry = ctk.CTkEntry(completed_panel, textvariable=self.complete_search_var, font=("Arial", 16))
+        complete_search_entry.grid(row=0, column=1, sticky="nw", padx=5, pady=5)
 
         self.completed_list = ctk.CTkScrollableFrame(completed_panel, width=256)
-        self.completed_list.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
+        self.completed_list.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
 
         completed_panel.grid_rowconfigure(1, weight=1)
         completed_panel.grid_columnconfigure(0, weight=1)
+        completed_panel.grid_columnconfigure(1, weight=1)
 
+
+    #==========================================================================================
+    # STRONGHOLD FILTERS
+    #==========================================================================================
+
+    def refresh_all_lists(self):
+        self.filter_remaining_strongholds()
+        self.filter_active_strongholds()
+        self.filter_complete_strongholds()
+
+    def filter_remaining_strongholds(self, *_):
+        query = self.remaining_search_var.get().strip().lower()
+
+        # Check for Stronghold Number or Player Name
+        if not query:
+            filtered = self.remaining_strongholds
+        else:
+            if query.isdigit():
+                filtered = [
+                    s for s in self.remaining_strongholds
+                    if query in str(s.number)
+                ]
+            else:
+                filtered = [
+                    s for s in self.remaining_strongholds
+                    if query in s.entry_var.get().lower()
+                ]
+
+        # Clear existing widgets
+        for widget in self.remaining_list.winfo_children():
+            widget.destroy()
+
+        # Pack widgets
+        for sh in filtered:
+            sh.create_widget(self.remaining_list)
+
+
+
+    def filter_active_strongholds(self, *_):
+        query = self.active_search_var.get().strip().lower()
+
+        # Check for Stronghold Number or Player Name
+        if not query:
+            filtered = self.active_strongholds
+        else:
+            if query.isdigit():
+                filtered = [
+                    s for s in self.active_strongholds
+                    if query in str(s.number)
+                ]
+            else:
+                filtered = [
+                    s for s in self.active_strongholds
+                    if query in s.entry_var.get().lower()
+                ]
+
+
+        # Clear existing widgets
+        for widget in self.active_list.winfo_children():
+            widget.destroy()
+
+        # Pack widgets
+        for sh in filtered:
+            sh.create_widget(self.active_list)
+
+
+
+    def filter_complete_strongholds(self, *_):
+        query = self.complete_search_var.get().strip().lower()
+
+        # Check for Stronghold Number or Player Name
+        if not query:
+            filtered = self.completed_strongholds
+        else:
+            if query.isdigit():
+                filtered = [
+                    s for s in self.completed_strongholds
+                    if query in str(s.number)
+                ]
+            else:
+                filtered = [
+                    s for s in self.completed_strongholds
+                    if query in s.entry_var.get().lower()
+                ]
+
+        # Clear existing widgets
+        for widget in self.completed_list.winfo_children():
+            widget.destroy()
+
+        # Pack widgets
+        for sh in filtered:
+            sh.create_widget(self.completed_list)
+
+    #==========================================================================================
+    # 
+    #==========================================================================================
 
     # Updates the Count of the List
     def update_counts(self):
@@ -194,9 +319,9 @@ class App(ctk.CTk):
         remaining = len(self.remaining_list.winfo_children())
         completed = len(self.completed_list.winfo_children())
 
-        self.active_count.set(f"Active Strongholds ({active})")
-        self.remaining_count.set(f"Remaining Strongholds ({remaining})")
-        self.completed_count.set(f"Completed Strongholds ({completed})")
+        self.active_count.set(f"Active ({active})")
+        self.remaining_count.set(f"Remaining ({remaining})")
+        self.completed_count.set(f"Complete ({completed})")
 
     
     def update_ring(self, ring, x, z):
@@ -258,6 +383,8 @@ class App(ctk.CTk):
             sh = StrongholdObject(app=self, ring=ring_val, index=i, x=x, z=z, angle=angle)
             self.stronghold_objects.append(sh)
 
+        # Refresh Lists
+        self.refresh_all_lists()
 
     
     def player_manager(self):
