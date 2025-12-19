@@ -26,6 +26,10 @@ class StrongholdObject:
         self.entry_widget = None
         self.canvas_items = []
 
+        # Widget that would be next in player path
+        # self.prev_sh = None
+        self.next_sh = None
+
         # Append to List
         if self.number in STRONGHOLDS_RING_START:
             self.status_var.set("Active")
@@ -100,6 +104,16 @@ class StrongholdObject:
         self.create_widget(target)
         self.app.update_counts()
         self.draw_on_canvas()
+
+        # Get next widget in path
+        if self.status_var.get() == "Complete" and self.next_sh is not None:
+
+            next_obj = next((sh for sh in self.app.stronghold_objects if sh.number == self.next_sh), None)
+
+            if next_obj and next_obj.status_var.get() == "Remaining":
+                print(f"Setting: {self.next_sh} to Active")
+                next_obj.set_status("Active")
+
 
     # Sets the status of a widget
     def set_status(self, target_name):

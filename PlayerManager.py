@@ -201,9 +201,6 @@ class PlayerManager(ctk.CTkToplevel):
             textbox.insert("end", textbox_text)
 
 
-    def update_all_stronghold_ids(self):
-        for i in range(len(self.player_paths)):
-            self.update_stronghold_ids(i)
 
     def update_stronghold_ids(self, player_index):
 
@@ -229,7 +226,7 @@ class PlayerManager(ctk.CTkToplevel):
 
         new_path = [[player_index, str(name_entry.get())]] 
 
-        for stronghold_id in stronghold_ids:
+        for i, stronghold_id in enumerate(stronghold_ids):
 
             # Look up SH object from stronghold_objects
             sh = next((sh for sh in self.stronghold_objects if sh.number == stronghold_id), None)
@@ -242,6 +239,16 @@ class PlayerManager(ctk.CTkToplevel):
             new_path.append([stronghold_id, sh.x, sh.z])
 
             sh.update_name(str(name_entry.get()))
+
+            # TODO Add check for if first path should be
+            # If the first one in the path, set active
+            if i == 0:
+                sh.set_status("Active")
+
+            # TODO Add a check like draw on canvas
+            # Point to the next sh
+            sh.next_sh = stronghold_ids[i + 1] if i < len(stronghold_ids) - 1 else None
+
 
         # Save back into main structure
         self.player_paths[player_index] = new_path
@@ -370,7 +377,8 @@ class PlayerManager(ctk.CTkToplevel):
             count_label.configure(text=f"Stronghold Ids ({len(new_paths[i]) - 1})")
 
         # Update all sh ids
-        self.update_all_stronghold_ids()
+        for i in range(len(self.player_paths)):
+            self.update_stronghold_ids(i)
 
         # Finally redraw paths
         self.draw_paths_on_canvas()
