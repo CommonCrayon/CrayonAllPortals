@@ -243,12 +243,7 @@ class App(ctk.CTk):
         if not query:
             return strongholds
 
-        q = query.lower()
-
-        if q.isdigit():
-            return [s for s in strongholds if q in str(s.number)]
-        else:
-            return [s for s in strongholds if q in s.entry_var.get().lower()]
+        return [s for s in strongholds if query.lower() in str(s.number)]
 
 
     def rebuild_list(self, list_type, strongholds, filtered):
