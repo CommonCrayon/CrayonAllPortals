@@ -1,5 +1,6 @@
 import customtkinter as ctk
 from PathSolver import make_stronghold_list
+import math
 
 WORLD_MIN = -24320
 WORLD_MAX = 24320
@@ -65,22 +66,14 @@ class PlayerManager(ctk.CTkToplevel):
         auto_assigner_frame.grid(row=0, column=1, sticky="nsew", padx=(5, 10), pady=10)
 
         auto_assigner_frame.grid_columnconfigure(0, weight=1)
-        auto_assigner_frame.grid_columnconfigure(1, weight=1)
 
-        ctk.CTkLabel(auto_assigner_frame, text="Path Generator", font=("Arial", 22)).grid(row=0, column=0, columnspan=2, sticky="nesw", padx=10, pady=10)
-
-        # Time Per Path Label
-        ctk.CTkLabel(auto_assigner_frame, text="Time Per Path:", font=("Arial", 18)).grid(row=1, column=0, sticky="nesw", padx=(10, 5), pady=5)
-
-        # Time Entry
-        self.time_per_path_entry = ctk.CTkEntry(auto_assigner_frame, width=120, textvariable=ctk.StringVar(value="10"), font=("Arial", 18))
-        self.time_per_path_entry.grid(row=1, column=1, sticky="nesw", padx=(5, 10), pady=5)
+        ctk.CTkLabel(auto_assigner_frame, text="Path Generator", font=("Arial", 22)).grid(row=0, column=0, sticky="nesw", padx=10, pady=10)
 
         # Generate a path and assign strongholds to players
-        ctk.CTkButton(auto_assigner_frame, text="Generate", font=("Arial", 18), command=self.generate_path).grid(row=2, column=0, columnspan=2, sticky="nesw", padx=10, pady=10)
+        ctk.CTkButton(auto_assigner_frame, text="Generate", font=("Arial", 18), command=self.generate_path).grid(row=2, column=0, sticky="nesw", padx=10, pady=10)
 
         # Copy to Clipboard
-        ctk.CTkButton(auto_assigner_frame, text="Copy to Clipboard", font=("Arial", 18), command=self.copy_paths_to_clipboard).grid(row=3, column=0, columnspan=2, sticky="nesw", padx=10, pady=10)
+        ctk.CTkButton(auto_assigner_frame, text="Copy to Clipboard", font=("Arial", 18), command=self.copy_paths_to_clipboard).grid(row=3, column=0, sticky="nesw", padx=10, pady=10)
 
 
         #======================================================================================================================
@@ -348,21 +341,13 @@ class PlayerManager(ctk.CTkToplevel):
             new_paths[player_index].append([sh.number, sh.x, sh.z])
 
 
-        # Get time per path
-        time_per_path = 10
-        try:
-            time_per_path = int(self.time_per_path_entry.get())
-        except ValueError:
-            pass
-
-
         # Sort each player's strongholds by ID
         for i in range(self.num_of_players):
 
             sh_points = new_paths[i]
             first_entry = sh_points[0]
 
-            sorted_strongholds = make_stronghold_list(sh_points[1:], time_per_path)
+            sorted_strongholds = make_stronghold_list(sh_points[1:], math.ceil(10 / self.num_of_players)) # Hardcoded, should take around 10 seconds to calculate
             new_paths[i] = [first_entry] + sorted_strongholds
 
         # Save into main structure
