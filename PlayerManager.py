@@ -236,7 +236,7 @@ class PlayerManager(ctk.CTkToplevel):
             # TODO Add check for if first path should be
             # If the first one in the path, set active
             if i == 0:
-                sh.set_status("Active")
+                sh.set_status("ACT")
 
             # TODO Add a check like draw on canvas
             # Point to the next sh
@@ -258,7 +258,7 @@ class PlayerManager(ctk.CTkToplevel):
         for stronghold_id, _, _ in self.player_paths[player_index][1:]:
             sh = next((sh for sh in self.stronghold_objects if sh.number == stronghold_id), None)
 
-            sh.set_status("Complete")
+            sh.set_status("COM")
 
         
 
@@ -327,7 +327,7 @@ class PlayerManager(ctk.CTkToplevel):
         for sh in self.parent.stronghold_objects:
 
             # Skip if already complete
-            if sh.status_var.get() == "Complete":
+            if sh.widget_status == "COM":
                 continue
 
             angle = sh.angle % 360  # Normalize

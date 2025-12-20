@@ -20,7 +20,7 @@ class StrongholdObject:
         self.angle = angle
 
         self.entry_var = ctk.StringVar(value="")
-        self.status_var = ctk.StringVar()
+        self.widget_status = None
 
         self.widget_frame = None
         self.entry_widget = None
@@ -32,11 +32,11 @@ class StrongholdObject:
 
         # Append to List
         if self.number in STRONGHOLDS_RING_START:
-            self.status_var.set("Active")
+            self.widget_status = "ACT"
             self.app.active_strongholds.append(self)
             parent = self.app.active_list
         else:
-            self.status_var.set("Remaining")
+            self.widget_status = "REM"
             self.app.remaining_strongholds.append(self)
             parent = self.app.remaining_list
         
@@ -55,35 +55,36 @@ class StrongholdObject:
             # layout config
             frame.grid_columnconfigure(0, minsize=48)
             frame.grid_columnconfigure(1, weight=1)
-            frame.grid_columnconfigure(2, weight=1)
-            frame.grid_columnconfigure(3, weight=1)
+            frame.grid_columnconfigure(2, weight=3)
+            frame.grid_columnconfigure(3, weight=3)
 
             # ID label
             ctk.CTkLabel(frame, text=str(self.number), font=("Arial", 24)).grid(row=0, column=0, rowspan=3, padx=5, pady=5)
 
             # Overworld
-            ctk.CTkLabel(frame, text="Overworld", font=("Arial", 18)).grid(row=1, column=1, sticky="w", padx=5)
+            ctk.CTkLabel(frame, text="Overworld", font=("Arial", 14)).grid(row=1, column=1, sticky="w", padx=5)
             ctk.CTkLabel(frame, text=str(self.x), font=("Arial", 18)).grid(row=1, column=2, sticky="e")
             ctk.CTkLabel(frame, text=str(self.z), font=("Arial", 18)).grid(row=1, column=3, padx=(0, 5), sticky="e")
 
             # Nether
-            ctk.CTkLabel(frame, text="Nether", font=("Arial", 18)).grid(row=2, column=1, sticky="w", padx=5)
+            ctk.CTkLabel(frame, text="Nether", font=("Arial", 14)).grid(row=2, column=1, sticky="w", padx=5)
             ctk.CTkLabel(frame, text=str(round(self.x / 8)), font=("Arial", 18)).grid(row=2, column=2, sticky="e")
             ctk.CTkLabel(frame, text=str(round(self.z / 8)), font=("Arial", 18)).grid(row=2, column=3, padx=(0, 5), sticky="e")
 
             # Player field
             ctk.CTkEntry(frame, textvariable=self.entry_var, placeholder_text="Enter Name"
-            ).grid(row=3, column=0, columnspan=2, padx=5, pady=(0, 5), sticky="w")
+            ).grid(row=3, column=0, columnspan=2, padx=(5,2), pady=(0, 5), sticky="w")
 
-            # Status combo
-            status_box = ctk.CTkComboBox(
-                frame,
-                values=["Active", "Remaining", "Complete"],
-                state="readonly",
-                variable=self.status_var,
-                command=self.on_status_change
-            )
-            status_box.grid(row=3, column=2, columnspan=2, padx=5, pady=(0, 5), sticky="ew")
+            # Status Change Buttons
+            if self.widget_status == "ACT":
+                ctk.CTkButton(frame, text="REM", font=("Arial", 12, "bold"), fg_color="#DC8D8C", command=lambda status="REM": self.set_status(status)).grid(row=3, column=2, padx=(0, 2), pady=(0, 5), sticky="ns")
+                ctk.CTkButton(frame, text="COM", font=("Arial", 12, "bold"), fg_color="#43A047", command=lambda status="COM": self.set_status(status)).grid(row=3, column=3, padx=(0, 5), pady=(0, 5), sticky="ns")
+            elif self.widget_status == "REM":
+                ctk.CTkButton(frame, text="ACT", font=("Arial", 12, "bold"), fg_color="#1976D2", command=lambda status="ACT": self.set_status(status)).grid(row=3, column=2, padx=(0, 2), pady=(0, 5), sticky="ns")
+                ctk.CTkButton(frame, text="COM", font=("Arial", 12, "bold"), fg_color="#43A047", command=lambda status="COM": self.set_status(status)).grid(row=3, column=3, padx=(0, 5), pady=(0, 5), sticky="ns")
+            elif self.widget_status == "COM":
+                ctk.CTkButton(frame, text="REM", font=("Arial", 12, "bold"), fg_color="#DC8D8C", command=lambda status="REM": self.set_status(status)).grid(row=3, column=2, padx=(0, 2), pady=(0, 5), sticky="ns")
+                ctk.CTkButton(frame, text="ACT", font=("Arial", 12, "bold"), fg_color="#1976D2", command=lambda status="ACT": self.set_status(status)).grid(row=3, column=3, padx=(0, 5), pady=(0, 5), sticky="ns")
 
 
         # Re-parent safely
@@ -92,13 +93,17 @@ class StrongholdObject:
 
 
 
-    # Update on status change
-    def on_status_change(self, *_):
-        target = {
-            "Active": self.app.active_list,
-            "Remaining": self.app.remaining_list,
-            "Complete": self.app.completed_list,
-        }[self.status_var.get()]
+    def set_status(self, new_status: str):
+
+        self.widget_status = new_status
+
+        if new_status == "ACT":
+            target = self.app.active_list
+        elif new_status == "COM":
+            target = self.app.completed_list
+        else:
+            target = self.app.remaining_list
+
 
         self.destroy()
         self.create_widget(target)
@@ -106,29 +111,13 @@ class StrongholdObject:
         self.draw_on_canvas()
 
         # Get next widget in path
-        if self.status_var.get() == "Complete" and self.next_sh is not None:
+        if new_status == "COM" and self.next_sh is not None:
 
             next_obj = next((sh for sh in self.app.stronghold_objects if sh.number == self.next_sh), None)
 
-            if next_obj and next_obj.status_var.get() == "Remaining":
+            if next_obj and next_obj.widget_status == "REM":
                 print(f"Setting: {self.next_sh} to Active")
-                next_obj.set_status("Active")
-
-
-    # Sets the status of a widget
-    def set_status(self, target_name):
-        setList = self.app.remaining_list
-
-        if target_name == "Active":
-            setList = self.app.active_list
-        elif target_name == "Complete":
-            setList = self.app.completed_list
-
-        self.destroy()
-        self.create_widget(setList)
-        self.status_var.set(target_name)
-        self.app.update_counts()
-        self.draw_on_canvas()
+                next_obj.set_status("ACT")
 
 
     def update_name(self, new_text):
@@ -161,19 +150,19 @@ class StrongholdObject:
 
         # Style presets by status
         STATUS_STYLE = {
-            "Active": {
+            "ACT": {
                 "color": "#1976D2",
                 "text":  "#FFFFFF",
                 "font_size": 18,
                 "radius": 18,
             },
-            "Remaining": {
+            "REM": {
                 "color": "#DC8D8C",
                 "text":  "#FFFFFF",
                 "font_size": 14,
                 "radius": 14,
             },
-            "Complete": {
+            "COM": {
                 "color": "#43A047",
                 "text":  "#FFFFFF",
                 "font_size": 14,
@@ -182,8 +171,7 @@ class StrongholdObject:
         }
 
         # Get style for current status (fallback: Remaining)
-        status = self.status_var.get()
-        style = STATUS_STYLE.get(status, STATUS_STYLE["Remaining"])
+        style = STATUS_STYLE.get(self.widget_status, STATUS_STYLE["REM"])
 
         dot_color  = style["color"]
         font_size  = style["font_size"]

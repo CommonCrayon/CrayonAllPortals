@@ -161,7 +161,7 @@ class App(ctk.CTk):
         self.active_search_var = ctk.StringVar()
         self.active_search_var.trace_add("write", self.filter_active_strongholds)
         active_search_entry = ctk.CTkEntry(active_panel, textvariable=self.active_search_var, width=64, font=("Arial", 16))
-        active_search_entry.grid(row=0, column=1, sticky="ne", padx=5, pady=5)
+        active_search_entry.grid(row=0, column=1, sticky="ne", padx=8, pady=(6, 0))
 
         # List
         self.active_list = ctk.CTkScrollableFrame(active_panel, width=256)
@@ -184,7 +184,7 @@ class App(ctk.CTk):
         self.remaining_search_var = ctk.StringVar()
         self.remaining_search_var.trace_add("write", self.filter_remaining_strongholds)
         remaining_search_entry = ctk.CTkEntry(remaining_panel, textvariable=self.remaining_search_var, width=64, font=("Arial", 16))
-        remaining_search_entry.grid(row=0, column=1, sticky="ne", padx=5, pady=5)
+        remaining_search_entry.grid(row=0, column=1, sticky="ne", padx=8, pady=(6, 0))
 
         # List
         self.remaining_list = ctk.CTkScrollableFrame(remaining_panel, width=256)
@@ -207,7 +207,7 @@ class App(ctk.CTk):
         self.complete_search_var = ctk.StringVar()
         self.complete_search_var.trace_add("write", self.filter_complete_strongholds)
         complete_search_entry = ctk.CTkEntry(completed_panel, textvariable=self.complete_search_var, width=64, font=("Arial", 16))
-        complete_search_entry.grid(row=0, column=1, sticky="ne", padx=5, pady=5)
+        complete_search_entry.grid(row=0, column=1, sticky="ne", padx=8, pady=(6, 0))
 
         self.completed_list = ctk.CTkScrollableFrame(completed_panel, width=256)
         self.completed_list.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
@@ -224,18 +224,18 @@ class App(ctk.CTk):
     def filter_remaining_strongholds(self, *_):
         query = self.remaining_search_var.get().strip()
         filtered = self.filter_strongholds(self.remaining_strongholds, query)
-        self.rebuild_list("Remaining", self.remaining_strongholds, filtered)
+        self.rebuild_list("REM", self.remaining_strongholds, filtered)
 
     def filter_active_strongholds(self, *_):
         query = self.active_search_var.get().strip()
         filtered = self.filter_strongholds(self.active_strongholds, query)
-        self.rebuild_list("Active", self.active_strongholds, filtered)
+        self.rebuild_list("ACT", self.active_strongholds, filtered)
 
 
     def filter_complete_strongholds(self, *_):
         query = self.complete_search_var.get().strip()
         filtered = self.filter_strongholds(self.completed_strongholds, query)
-        self.rebuild_list("Complete", self.completed_strongholds, filtered)
+        self.rebuild_list("COM", self.completed_strongholds, filtered)
 
 
 
@@ -251,7 +251,7 @@ class App(ctk.CTk):
 
         for sh in strongholds:
             # If not in list, then do not unpack or pack
-            if (str(sh.status_var.get()) != list_type):
+            if (sh.widget_status != list_type):
                 continue
 
             if sh in filtered_set:
