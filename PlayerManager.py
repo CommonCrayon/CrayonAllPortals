@@ -170,7 +170,7 @@ class PlayerManager(ctk.CTkToplevel):
             player_name_entry.bind("<KeyRelease>", lambda event, idx=i: self.update_stronghold_ids(idx))
 
             # Path by stronghold id
-            ctk.CTkLabel(frame, text="Stronghold Ids:", font=("Arial", 18), anchor="w").grid(row=2, column=0, padx=5, pady=(15, 5), sticky="nesw")
+            ctk.CTkLabel(frame, text="Stronghold Ids (0)", font=("Arial", 18), anchor="w").grid(row=2, column=0, padx=5, sticky="nesw")
 
             # Textbox for Stronghold Ids
             textbox = ctk.CTkTextbox(frame, font=("Arial", 18))
