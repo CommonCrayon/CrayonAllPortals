@@ -123,23 +123,21 @@ class App(ctk.CTk):
         #======================================================================================================================
         # Player Path
         #======================================================================================================================
-        player_path_frame = ctk.CTkFrame(self)
-        player_path_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
+        mini_menu_frame = ctk.CTkFrame(self)
+        mini_menu_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
+        mini_menu_frame.grid_columnconfigure(0, weight=1)
+        mini_menu_frame.grid_columnconfigure(1, weight=1)
 
-        player_path_frame.grid_columnconfigure(0, weight=1)
-
-        ctk.CTkLabel(player_path_frame, text="Player Pathing Management", font=("Arial", 20)).grid(row=0, column=0, sticky="new", padx=10, pady=(10, 20))
+        ctk.CTkLabel(mini_menu_frame, text="Mini Menu", font=("Arial", 20)).grid(row=0, column=0, columnspan=2, sticky="new", padx=10, pady=(10, 20))
 
         # Player Manager Button
-        ctk.CTkButton(
-            player_path_frame,
-            text="Open Player Manager",
-            font=("Arial", 16),
-            width=160,
-            height=38,
-            corner_radius=12,
-            command=self.player_manager
-        ).grid(row=1, column=0, pady=(15, 10))
+        ctk.CTkButton(mini_menu_frame, text="Open Player Manager", font=("Arial", 18, "bold"), command=self.player_manager).grid(row=1, column=0, columnspan=2, padx=10, pady=10, sticky="nesw")
+
+        # When setting a stronghold ring, what happens to the stronghold that was used to set it.
+        ctk.CTkLabel(mini_menu_frame, text="Ring Status Set:", font=("Arial", 18)).grid(row=2, column=0, padx=(10, 0), pady=10, sticky="nesw")
+        self.ring_set_status_combobox = ctk.CTkComboBox(mini_menu_frame, values=["Remaining", "Active", "Complete"])
+        self.ring_set_status_combobox.grid(row=2, column=1, padx=(0, 10), pady=10, sticky="nesw")
+        self.ring_set_status_combobox.set("Active")
 
         #======================================================================================================================
         # Strongholds List Panels
@@ -332,6 +330,15 @@ class App(ctk.CTk):
         # Create new StrongholdObject instances
         for i, [x, z, angle] in enumerate(new_strongholds):
             sh = StrongholdObject(app=self, ring=ring_val, index=i, x=x, z=z, angle=angle)
+
+            # Handle first stronghold enter, the stronghold used to calculate ring angle
+            if i == 0:
+                if (self.ring_set_status_combobox.get() == "Active"):
+                    sh.set_status("ACT")
+                elif (self.ring_set_status_combobox.get() == "Complete"):
+                    sh.set_status("COM")
+
+            # Append to list
             self.stronghold_objects.append(sh)
 
         # Refresh Lists
