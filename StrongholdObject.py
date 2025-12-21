@@ -188,21 +188,21 @@ class StrongholdObject:
 
         if status == "REM" and self.remaining_widget_frame is not None:
             if self.widget_status == status and self in filtered_set:
-                self.remaining_widget_frame.pack(fill="x")
+                self.remaining_widget_frame.pack(fill="x", pady=2)
                 return 1
             else:
                 self.remaining_widget_frame.pack_forget()
 
         elif status == "ACT" and self.active_widget_frame is not None:
             if self.widget_status == status and self in filtered_set:
-                self.active_widget_frame.pack(fill="x")
+                self.active_widget_frame.pack(fill="x", pady=2)
                 return 1
             else:
                 self.active_widget_frame.pack_forget()
 
         elif status == "COM" and self.completed_widget_frame is not None:
             if self.widget_status == status and self in filtered_set:
-                self.completed_widget_frame.pack(fill="x")
+                self.completed_widget_frame.pack(fill="x", pady=2)
                 return 1
             else:
                 self.completed_widget_frame.pack_forget()
