@@ -5,7 +5,7 @@
 
 2. Run downloaded executable file.
 
-3. TODO
+![](images/example.png?raw=true)
 
 # BUILD
 
