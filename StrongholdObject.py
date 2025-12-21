@@ -22,92 +22,134 @@ class StrongholdObject:
         self.entry_var = ctk.StringVar(value="")
         self.widget_status = None
 
-        self.widget_frame = None
-        self.entry_widget = None
+        # Keep a widget per status to avoid lag of creating and destroying widgets
+        self.remaining_widget_frame = None
+        self.active_widget_frame = None
+        self.completed_widget_frame = None
+
         self.canvas_items = []
 
         # Widget that would be next in player path
         # self.prev_sh = None
         self.next_sh = None
 
-        # Append to List
-        if self.number in STRONGHOLDS_RING_START:
-            self.widget_status = "ACT"
-            self.app.active_strongholds.append(self)
-            parent = self.app.active_list
-        else:
-            self.widget_status = "REM"
-            self.app.remaining_strongholds.append(self)
-            parent = self.app.remaining_list
-        
-        self.create_widget(parent)
-        self.app.update_counts()
+        # Append to Remaning on Default
+        self.widget_status = "REM"
+        self.app.stronghold_widgets.append(self)
+        self.create_widget()
         self.draw_on_canvas()
 
 
 
     # Create widget in given parent container
-    def create_widget(self, parent):
-        if self.widget_frame is None:
-            frame = ctk.CTkFrame(parent)
-            self.widget_frame = frame
+    def create_widget(self):
 
-            # layout config
-            frame.grid_columnconfigure(0, minsize=48)
-            frame.grid_columnconfigure(1, weight=1)
-            frame.grid_columnconfigure(2, weight=3)
-            frame.grid_columnconfigure(3, weight=3)
+        # =========================================================================================
+        # self.remaining_widget_frame
+        # =========================================================================================
+        remaining_frame = ctk.CTkFrame(self.app.remaining_list)
+        self.remaining_widget_frame = remaining_frame
 
-            # ID label
-            ctk.CTkLabel(frame, text=str(self.number), font=("Arial", 24)).grid(row=0, column=0, rowspan=3, padx=5, pady=5)
+        # layout config
+        remaining_frame.grid_columnconfigure(0, minsize=48)
+        remaining_frame.grid_columnconfigure(1, weight=1)
+        remaining_frame.grid_columnconfigure(2, weight=3)
+        remaining_frame.grid_columnconfigure(3, weight=3)
 
-            # Overworld
-            ctk.CTkLabel(frame, text="Overworld", font=("Arial", 14)).grid(row=1, column=1, sticky="w", padx=5)
-            ctk.CTkLabel(frame, text=str(self.x), font=("Arial", 18)).grid(row=1, column=2, sticky="e")
-            ctk.CTkLabel(frame, text=str(self.z), font=("Arial", 18)).grid(row=1, column=3, padx=(0, 5), sticky="e")
+        # ID label
+        ctk.CTkLabel(remaining_frame, text=str(self.number), font=("Arial", 24)).grid(row=0, column=0, rowspan=3, padx=5, pady=5)
 
-            # Nether
-            ctk.CTkLabel(frame, text="Nether", font=("Arial", 14)).grid(row=2, column=1, sticky="w", padx=5)
-            ctk.CTkLabel(frame, text=str(round(self.x / 8)), font=("Arial", 18)).grid(row=2, column=2, sticky="e")
-            ctk.CTkLabel(frame, text=str(round(self.z / 8)), font=("Arial", 18)).grid(row=2, column=3, padx=(0, 5), sticky="e")
+        # Overworld
+        ctk.CTkLabel(remaining_frame, text="Overworld", font=("Arial", 14)).grid(row=1, column=1, sticky="w", padx=5)
+        ctk.CTkLabel(remaining_frame, text=str(self.x), font=("Arial", 18)).grid(row=1, column=2, sticky="e")
+        ctk.CTkLabel(remaining_frame, text=str(self.z), font=("Arial", 18)).grid(row=1, column=3, padx=(0, 5), sticky="e")
 
-            # Player field
-            ctk.CTkEntry(frame, textvariable=self.entry_var, placeholder_text="Enter Name"
-            ).grid(row=3, column=0, columnspan=2, padx=(5,2), pady=(0, 5), sticky="w")
+        # Nether
+        ctk.CTkLabel(remaining_frame, text="Nether", font=("Arial", 14)).grid(row=2, column=1, sticky="w", padx=5)
+        ctk.CTkLabel(remaining_frame, text=str(round(self.x / 8)), font=("Arial", 18)).grid(row=2, column=2, sticky="e")
+        ctk.CTkLabel(remaining_frame, text=str(round(self.z / 8)), font=("Arial", 18)).grid(row=2, column=3, padx=(0, 5), sticky="e")
 
-            # Status Change Buttons
-            if self.widget_status == "ACT":
-                ctk.CTkButton(frame, text="REM", font=("Arial", 12, "bold"), fg_color="#DC8D8C", command=lambda status="REM": self.set_status(status)).grid(row=3, column=2, padx=(0, 2), pady=(0, 5), sticky="ns")
-                ctk.CTkButton(frame, text="COM", font=("Arial", 12, "bold"), fg_color="#43A047", command=lambda status="COM": self.set_status(status)).grid(row=3, column=3, padx=(0, 5), pady=(0, 5), sticky="ns")
-            elif self.widget_status == "REM":
-                ctk.CTkButton(frame, text="ACT", font=("Arial", 12, "bold"), fg_color="#1976D2", command=lambda status="ACT": self.set_status(status)).grid(row=3, column=2, padx=(0, 2), pady=(0, 5), sticky="ns")
-                ctk.CTkButton(frame, text="COM", font=("Arial", 12, "bold"), fg_color="#43A047", command=lambda status="COM": self.set_status(status)).grid(row=3, column=3, padx=(0, 5), pady=(0, 5), sticky="ns")
-            elif self.widget_status == "COM":
-                ctk.CTkButton(frame, text="REM", font=("Arial", 12, "bold"), fg_color="#DC8D8C", command=lambda status="REM": self.set_status(status)).grid(row=3, column=2, padx=(0, 2), pady=(0, 5), sticky="ns")
-                ctk.CTkButton(frame, text="ACT", font=("Arial", 12, "bold"), fg_color="#1976D2", command=lambda status="ACT": self.set_status(status)).grid(row=3, column=3, padx=(0, 5), pady=(0, 5), sticky="ns")
+        # Player field
+        ctk.CTkEntry(remaining_frame, textvariable=self.entry_var, placeholder_text="Enter Name"
+        ).grid(row=3, column=0, columnspan=2, padx=(5,2), pady=(0, 5), sticky="w")
+
+        # Status Change Buttons
+        ctk.CTkButton(remaining_frame, text="ACT", font=("Arial", 12, "bold"), fg_color="#1976D2", command=lambda status="ACT": self.set_status(status)).grid(row=3, column=2, padx=(0, 2), pady=(0, 5), sticky="ns")
+        ctk.CTkButton(remaining_frame, text="COM", font=("Arial", 12, "bold"), fg_color="#43A047", command=lambda status="COM": self.set_status(status)).grid(row=3, column=3, padx=(0, 5), pady=(0, 5), sticky="ns")
 
 
-        # Re-parent safely
-        self.widget_frame.pack_forget()
-        self.widget_frame.pack(in_=parent, fill="x", pady=2, padx=2)
+        # =========================================================================================
+        # self.active_widget_frame
+        # =========================================================================================
+        active_frame = ctk.CTkFrame(self.app.active_list)
+        self.active_widget_frame = active_frame
 
+        # layout config
+        active_frame.grid_columnconfigure(0, minsize=48)
+        active_frame.grid_columnconfigure(1, weight=1)
+        active_frame.grid_columnconfigure(2, weight=3)
+        active_frame.grid_columnconfigure(3, weight=3)
+
+        # ID label
+        ctk.CTkLabel(active_frame, text=str(self.number), font=("Arial", 24)).grid(row=0, column=0, rowspan=3, padx=5, pady=5)
+
+        # Overworld
+        ctk.CTkLabel(active_frame, text="Overworld", font=("Arial", 14)).grid(row=1, column=1, sticky="w", padx=5)
+        ctk.CTkLabel(active_frame, text=str(self.x), font=("Arial", 18)).grid(row=1, column=2, sticky="e")
+        ctk.CTkLabel(active_frame, text=str(self.z), font=("Arial", 18)).grid(row=1, column=3, padx=(0, 5), sticky="e")
+
+        # Nether
+        ctk.CTkLabel(active_frame, text="Nether", font=("Arial", 14)).grid(row=2, column=1, sticky="w", padx=5)
+        ctk.CTkLabel(active_frame, text=str(round(self.x / 8)), font=("Arial", 18)).grid(row=2, column=2, sticky="e")
+        ctk.CTkLabel(active_frame, text=str(round(self.z / 8)), font=("Arial", 18)).grid(row=2, column=3, padx=(0, 5), sticky="e")
+
+        # Player field
+        ctk.CTkEntry(active_frame, textvariable=self.entry_var, placeholder_text="Enter Name"
+        ).grid(row=3, column=0, columnspan=2, padx=(5,2), pady=(0, 5), sticky="w")
+
+        # Status Change Buttons
+        ctk.CTkButton(active_frame, text="REM", font=("Arial", 12, "bold"), fg_color="#DC8D8C", command=lambda status="REM": self.set_status(status)).grid(row=3, column=2, padx=(0, 2), pady=(0, 5), sticky="ns")
+        ctk.CTkButton(active_frame, text="COM", font=("Arial", 12, "bold"), fg_color="#43A047", command=lambda status="COM": self.set_status(status)).grid(row=3, column=3, padx=(0, 5), pady=(0, 5), sticky="ns")
+
+
+        # =========================================================================================
+        # self.completed_widget_frame
+        # =========================================================================================
+        completed_frame = ctk.CTkFrame(self.app.completed_list)
+        self.completed_widget_frame = completed_frame
+
+        # layout config
+        completed_frame.grid_columnconfigure(0, minsize=48)
+        completed_frame.grid_columnconfigure(1, weight=1)
+        completed_frame.grid_columnconfigure(2, weight=3)
+        completed_frame.grid_columnconfigure(3, weight=3)
+
+        # ID label
+        ctk.CTkLabel(completed_frame, text=str(self.number), font=("Arial", 24)).grid(row=0, column=0, rowspan=3, padx=5, pady=5)
+
+        # Overworld
+        ctk.CTkLabel(completed_frame, text="Overworld", font=("Arial", 14)).grid(row=1, column=1, sticky="w", padx=5)
+        ctk.CTkLabel(completed_frame, text=str(self.x), font=("Arial", 18)).grid(row=1, column=2, sticky="e")
+        ctk.CTkLabel(completed_frame, text=str(self.z), font=("Arial", 18)).grid(row=1, column=3, padx=(0, 5), sticky="e")
+
+        # Nether
+        ctk.CTkLabel(completed_frame, text="Nether", font=("Arial", 14)).grid(row=2, column=1, sticky="w", padx=5)
+        ctk.CTkLabel(completed_frame, text=str(round(self.x / 8)), font=("Arial", 18)).grid(row=2, column=2, sticky="e")
+        ctk.CTkLabel(completed_frame, text=str(round(self.z / 8)), font=("Arial", 18)).grid(row=2, column=3, padx=(0, 5), sticky="e")
+
+        # Player field
+        ctk.CTkEntry(completed_frame, textvariable=self.entry_var, placeholder_text="Enter Name"
+        ).grid(row=3, column=0, columnspan=2, padx=(5,2), pady=(0, 5), sticky="w")
+
+        # Status Change Buttons
+        ctk.CTkButton(completed_frame, text="REM", font=("Arial", 12, "bold"), fg_color="#DC8D8C", command=lambda status="REM": self.set_status(status)).grid(row=3, column=2, padx=(0, 2), pady=(0, 5), sticky="ns")
+        ctk.CTkButton(completed_frame, text="ACT", font=("Arial", 12, "bold"), fg_color="#1976D2", command=lambda status="ACT": self.set_status(status)).grid(row=3, column=3, padx=(0, 5), pady=(0, 5), sticky="ns")
 
 
     def set_status(self, new_status: str):
 
         self.widget_status = new_status
 
-        if new_status == "ACT":
-            target = self.app.active_list
-        elif new_status == "COM":
-            target = self.app.completed_list
-        else:
-            target = self.app.remaining_list
-
-
-        self.destroy()
-        self.create_widget(target)
-        self.app.update_counts()
         self.draw_on_canvas()
 
         # Get next widget in path
@@ -119,12 +161,54 @@ class StrongholdObject:
                 print(f"Setting: {self.next_sh} to Active")
                 next_obj.set_status("ACT")
 
+        
+        # reapply filters
+        self.app.filter_remaining_strongholds()
+        self.app.filter_active_strongholds()
+        self.app.filter_complete_strongholds()
 
+
+
+    # Method to update widget entry from PlayerManager.py
     def update_name(self, new_text):
-        # Get the entry widget
-        entry = self.widget_frame.winfo_children()[7]
+        # Get the entry of the widgets
+        rem = self.remaining_widget_frame.winfo_children()[7]
+        act = self.active_widget_frame.winfo_children()[7]
+        com = self.completed_widget_frame.winfo_children()[7]
 
-        entry.configure(textvariable=ctk.StringVar(value=new_text))
+        # Apply given text
+        rem.configure(textvariable=ctk.StringVar(value=new_text))
+        act.configure(textvariable=ctk.StringVar(value=new_text))
+        com.configure(textvariable=ctk.StringVar(value=new_text))
+
+
+
+    # Use function to get counts too, if 1 returned then count otherwise return 0
+    def update_from_filter(self, status, filtered_set) -> int:
+
+        if status == "REM" and self.remaining_widget_frame is not None:
+            if self.widget_status == status and self in filtered_set:
+                self.remaining_widget_frame.pack(fill="x")
+                return 1
+            else:
+                self.remaining_widget_frame.pack_forget()
+
+        elif status == "ACT" and self.active_widget_frame is not None:
+            if self.widget_status == status and self in filtered_set:
+                self.active_widget_frame.pack(fill="x")
+                return 1
+            else:
+                self.active_widget_frame.pack_forget()
+
+        elif status == "COM" and self.completed_widget_frame is not None:
+            if self.widget_status == status and self in filtered_set:
+                self.completed_widget_frame.pack(fill="x")
+                return 1
+            else:
+                self.completed_widget_frame.pack_forget()
+
+        return 0
+
 
 
     # Draw on canvas
@@ -195,16 +279,27 @@ class StrongholdObject:
             except Exception:
                 pass
 
-        # Save latest entry var
-        self.entry_var = ctk.StringVar(value=str(self.widget_frame.winfo_children()[7].get()))
-
-        # destroy widget
-        if self.widget_frame is not None:
+        # destroy all widgets
+        if self.remaining_widget_frame is not None:
             try:
-                self.widget_frame.destroy()
+                self.remaining_widget_frame.destroy()
+                self.remaining_widget_frame = None
             except Exception:
                 pass
-        self.widget_frame = None
+
+        if self.active_widget_frame is not None:
+            try:
+                self.active_widget_frame.destroy()
+                self.active_widget_frame = None
+            except Exception:
+                pass
+
+        if self.completed_widget_frame is not None:
+            try:
+                self.completed_widget_frame.destroy()
+                self.completed_widget_frame = None
+            except Exception:
+                pass
+
         self.canvas_items = []
-        self.app.update_counts()
 

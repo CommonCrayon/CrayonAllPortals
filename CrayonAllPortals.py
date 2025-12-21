@@ -51,12 +51,8 @@ class App(ctk.CTk):
         self.grid_rowconfigure(0, weight=2)
         self.grid_rowconfigure(1, weight=1)
 
-
-        # Stronghold lists
-        self.remaining_strongholds = []
-        self.active_strongholds = []
-        self.completed_strongholds = []
-
+        # Contains all widget references for strongholds
+        self.stronghold_widgets = []
 
         #======================================================================================================================
         # Stronghold Ring Reference
@@ -223,57 +219,62 @@ class App(ctk.CTk):
 
     def filter_remaining_strongholds(self, *_):
         query = self.remaining_search_var.get().strip()
-        filtered = self.filter_strongholds(self.remaining_strongholds, query)
-        self.rebuild_list("REM", self.remaining_strongholds, filtered)
+
+        # Get filtered stronghold widgets
+        if not query:
+            filtered = self.stronghold_widgets
+        else:
+            filtered = [s for s in self.stronghold_widgets if query.lower() in str(s.number)]
+
+        count = 0
+
+        # Update Filter
+        for sh in self.stronghold_widgets:
+            count += sh.update_from_filter("REM", set(filtered))
+
+        # Update counts
+        self.remaining_count.set(f"Remain ({count})")
+
 
     def filter_active_strongholds(self, *_):
         query = self.active_search_var.get().strip()
-        filtered = self.filter_strongholds(self.active_strongholds, query)
-        self.rebuild_list("ACT", self.active_strongholds, filtered)
+
+        # Get filtered stronghold widgets
+        if not query:
+            filtered = self.stronghold_widgets
+        else:
+            filtered = [s for s in self.stronghold_widgets if query.lower() in str(s.number)]
+
+        count = 0
+
+        # Update Filter
+        for sh in self.stronghold_widgets:
+            count += sh.update_from_filter("ACT", set(filtered))
+
+        # Update counts
+        self.active_count.set(f"Active ({count})")
 
 
     def filter_complete_strongholds(self, *_):
         query = self.complete_search_var.get().strip()
-        filtered = self.filter_strongholds(self.completed_strongholds, query)
-        self.rebuild_list("COM", self.completed_strongholds, filtered)
 
-
-
-    def filter_strongholds(self, strongholds, query):
+        # Get filtered stronghold widgets
         if not query:
-            return strongholds
+            filtered = self.stronghold_widgets
+        else:
+            filtered = [s for s in self.stronghold_widgets if query.lower() in str(s.number)]
 
-        return [s for s in strongholds if query.lower() in str(s.number)]
+        count = 0
 
+        # Update Filter
+        for sh in self.stronghold_widgets:
+            count += sh.update_from_filter("COM", set(filtered))
 
-    def rebuild_list(self, list_type, strongholds, filtered):
-        filtered_set = set(filtered)
-
-        for sh in strongholds:
-            # If not in list, then do not unpack or pack
-            if (sh.widget_status != list_type):
-                continue
-
-            if sh in filtered_set:
-                sh.widget_frame.pack(fill="x")
-            else:
-                sh.widget_frame.pack_forget()
+        # Update counts
+        self.completed_count.set(f"Complete ({count})")
 
     #==========================================================================================
-    # 
-    #==========================================================================================
 
-    # Updates the Count of the List
-    def update_counts(self):
-        active = len(self.active_list.winfo_children())
-        remaining = len(self.remaining_list.winfo_children())
-        completed = len(self.completed_list.winfo_children())
-
-        self.active_count.set(f"Active ({active})")
-        self.remaining_count.set(f"Remain ({remaining})")
-        self.completed_count.set(f"Complete ({completed})")
-
-    
     def update_ring(self, ring, x, z):
 
         ring_val = int(ring.get()) - 1
