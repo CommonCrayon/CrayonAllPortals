@@ -1,4 +1,6 @@
 import customtkinter as ctk
+from  CustomTkinterMessagebox  import  *
+
 from PIL import Image, ImageTk
 import numpy as np
 import sys, os, math
@@ -276,32 +278,31 @@ class App(ctk.CTk):
     def update_ring(self, ring, x, z):
 
         ring_val = int(ring.get()) - 1
-        x_val = int(x.get())
-        z_val = int(z.get())
 
-        # Get current ring bounds
-        lower, upper = BOUNDS_PER_RING[ring_val]
+        # Validate X
+        x_raw = x.get().strip()
+        try:
+            x_val = int(x_raw)
+        except ValueError:
+            CTkMessagebox.messagebox(title="Invalid X Value", text="X must be an integer.", sound='off')
+            return
 
-        # Compute distance from origin
-        distance = math.sqrt(x_val**2 + z_val**2)
+        # Validate Z
+        z_raw = z.get().strip()
+        try:
+            z_val = int(z_raw)
+        except ValueError:
+            CTkMessagebox.messagebox(title="Invalid Z Value", text="Z must be an integer.", sound='off')
+            return
 
-        # Check if distance within bounds. If not show error
-        if not (lower <= distance <= upper):
-
-            error_win = ctk.CTkToplevel(self)
-            error_win.title("Invalid Coordinates")
-            error_win.transient(self)
-            error_win.grab_set()
-
-            error_win.attributes("-topmost", True)
-
-            ctk.CTkLabel(error_win, text=f"{x_val} and {z_val} are NOT in bounds of Ring {ring_val+1}", text_color="red", font=("Arial", 18)).pack(padx=20, pady=20)
-
-            ctk.CTkButton(error_win, text="OK", command=error_win.destroy, font=("Arial", 18)).pack(pady=10)
-
+        # Validate Bounds. Check if distance within bounds. If not show error
+        if not (BOUNDS_PER_RING[ring_val][0] <= math.sqrt(x_val**2 + z_val**2) <= BOUNDS_PER_RING[ring_val][1]):
+            CTkMessagebox.messagebox(title="Invalid Coordinates", text=f"{x_val} and {z_val} are NOT in bounds of Ring {ring_val+1}", sound='off')
             return
 
         print(f"Updated Ring {ring_val+1} → X={x_val}, Z={z_val}")
+
+
 
         # Remove OLD strongholds from this stronghold ring
         ring_to_remove = [sh for sh in self.stronghold_objects if sh.ring == ring_val]

@@ -1,4 +1,5 @@
 import customtkinter as ctk
+from  CustomTkinterMessagebox  import  *
 from PathSolver import make_stronghold_list
 import math
 
@@ -129,10 +130,10 @@ class PlayerManager(ctk.CTkToplevel):
         # Get Number of players
         try:
             num_players = int(self.num_players_entry.get())
-            if num_players <= 0:
+            if num_players <= 0 or num_players >= 15:
                 raise ValueError
         except:
-            print("Invalid number of players.")
+            CTkMessagebox.messagebox(title="Invalid number of players", text="Number of players must be\ngreater than 0 and less than 15.", sound='off')
             return
         
         # Set Num of Players in object
