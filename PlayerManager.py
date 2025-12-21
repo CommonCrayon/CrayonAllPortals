@@ -1,5 +1,7 @@
 import customtkinter as ctk
+from  CustomTkinterMessagebox  import  *
 from PathSolver import make_stronghold_list
+import math
 
 WORLD_MIN = -24320
 WORLD_MAX = 24320
@@ -20,12 +22,14 @@ class PlayerManager(ctk.CTkToplevel):
         self.attributes("-topmost", True)
         self.title("Player Manager")
 
-        self.geometry("800x600")
+        self.geometry("930x655")
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
         self.grid_rowconfigure(1, weight=1)
+
+        self.colors = ["cyan", "magenta", "yellow", "orange", "purple", "red", "blue", "green", "brown", "pink", "lime", "navy", "teal", "gold"]
 
         #======================================================================================================================
         # Settings Frame
@@ -35,52 +39,51 @@ class PlayerManager(ctk.CTkToplevel):
 
         settings_frame.grid_columnconfigure(0, weight=1)
         settings_frame.grid_columnconfigure(1, weight=1)
-        settings_frame.grid_columnconfigure(2, weight=1)
 
 
-        ctk.CTkLabel(settings_frame, text="Settings", font=("Arial", 22)).grid(row=0, column=0, columnspan=3, sticky="nesw", padx=10, pady=10)
+        ctk.CTkLabel(settings_frame, text="Settings", font=("Arial", 22)).grid(row=0, column=0, columnspan=2, sticky="nesw", padx=10, pady=10)
 
 
         ctk.CTkLabel(settings_frame, text="Number of Players:", font=("Arial", 18)).grid(row=1, column=0, sticky="e", padx=(10, 5), pady=5)
+
         # Number of players entry box
         self.num_players_entry = ctk.CTkEntry(settings_frame, textvariable=ctk.StringVar(value="1"), font=("Arial", 18))
         self.num_players_entry.grid(row=1, column=1, sticky="w", padx=(5, 10), pady=5)
 
         # Number of players Button Set
-        ctk.CTkButton(settings_frame, text="SET", font=("Arial", 18), command=self.set_player_number).grid(row=1, column=2, sticky="w", padx=(5, 10), pady=5)
+        ctk.CTkButton(settings_frame, text="SET", font=("Arial", 18), width=300, command=self.set_player_number).grid(row=2, column=0, columnspan=2, sticky="ns", padx=(5, 10), pady=5)
 
 
-        # Draw on Canvas Checkbox
+        # Draw on Canvas Bool
         self.canvas_draw_bool = ctk.BooleanVar(value=True)
-
-        self.draw_on_canvas_checkbox = ctk.CTkCheckBox(settings_frame, text="Draw on Canvas", font=("Arial", 18), variable=self.canvas_draw_bool, command=self.draw_paths_on_canvas)
-        self.draw_on_canvas_checkbox.grid(row=2, column=0, columnspan=3, sticky="nesw", padx=10, pady=10)
+        ctk.CTkCheckBox(settings_frame, text="Draw on Canvas", font=("Arial", 18), variable=self.canvas_draw_bool, command=self.draw_paths_on_canvas
+            ).grid(row=3, column=0, columnspan=2, padx=10, pady=(20, 10))
 
         #======================================================================================================================
         # Player Stronghold Assigner
         #======================================================================================================================
-        auto_assigner_frame = ctk.CTkFrame(self)
-        auto_assigner_frame.grid(row=0, column=1, sticky="nsew", padx=(5, 10), pady=10)
+        path_gen_frame = ctk.CTkFrame(self)
+        path_gen_frame.grid(row=0, column=1, sticky="nsew", padx=(5, 10), pady=10)
 
-        auto_assigner_frame.grid_columnconfigure(0, weight=1)
-        auto_assigner_frame.grid_columnconfigure(1, weight=1)
+        path_gen_frame.grid_columnconfigure(0, weight=1)
 
-        ctk.CTkLabel(auto_assigner_frame, text="Path Generator", font=("Arial", 22)).grid(row=0, column=0, columnspan=2, sticky="nesw", padx=10, pady=10)
+        ctk.CTkLabel(path_gen_frame, text="Path Generator", font=("Arial", 22)).grid(row=0, column=0, sticky="nesw", padx=10, pady=10)
 
-        # ctk.CTkComboBox(auto_assigner_frame, values=["Split by Pie", "Split by Closest"], font=("Arial", 18)).grid(row=1, column=0, columnspan=2, sticky="nesw", padx=10, pady=5)
-
-        # Time Per Path Label
-        ctk.CTkLabel(auto_assigner_frame, text="Time Per Path:", font=("Arial", 18)).grid(row=1, column=0, sticky="nesw", padx=(10, 5), pady=5)
-
-        # Time Entry
-        self.time_per_path_entry = ctk.CTkEntry(auto_assigner_frame, width=120, textvariable=ctk.StringVar(value="10"), font=("Arial", 18))
-        self.time_per_path_entry.grid(row=1, column=1, sticky="nesw", padx=(5, 10), pady=5)
+        # Set first to Active in Path Bool
+        self.first_active_bool = ctk.BooleanVar(value=True)
+        ctk.CTkCheckBox(path_gen_frame, text="Make First Stronghold Active on Path", font=("Arial", 18), variable=self.first_active_bool
+            ).grid(row=1, column=0, padx=10, pady=10)
+        
+        # Auto Set Active in Path Bool
+        self.auto_active_bool = ctk.BooleanVar(value=True)
+        ctk.CTkCheckBox(path_gen_frame, text="Auto Set Stronghold Active on Path", font=("Arial", 18), variable=self.auto_active_bool
+            ).grid(row=2, column=0, padx=10, pady=10)
 
         # Generate a path and assign strongholds to players
-        ctk.CTkButton(auto_assigner_frame, text="Generate", font=("Arial", 18), command=self.generate_path).grid(row=2, column=0, columnspan=2, sticky="nesw", padx=10, pady=10)
+        ctk.CTkButton(path_gen_frame, text="Generate", font=("Arial", 18), width=300, command=self.generate_path).grid(row=3, column=0, sticky="ns", padx=10, pady=(10, 6))
 
         # Copy to Clipboard
-        ctk.CTkButton(auto_assigner_frame, text="Copy to Clipboard", font=("Arial", 18), command=self.copy_paths_to_clipboard).grid(row=3, column=0, columnspan=2, sticky="nesw", padx=10, pady=10)
+        ctk.CTkButton(path_gen_frame, text="Copy to Clipboard", font=("Arial", 18), width=300, command=self.copy_paths_to_clipboard).grid(row=4, column=0, sticky="ns", padx=10, pady=(6, 10))
 
 
         #======================================================================================================================
@@ -102,7 +105,7 @@ class PlayerManager(ctk.CTkToplevel):
         frame.grid(row=0, column=0, pady=5, padx=5, sticky="nsw")
 
         # Player Id
-        ctk.CTkLabel(frame, text=f"Player 1", font=("Arial", 18)).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        ctk.CTkLabel(frame, text=f"Player 1", font=("Arial", 18), text_color=self.colors[0]).grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
         # Player Name
         player_name_entry = ctk.CTkEntry(frame, placeholder_text="Name", font=("Arial", 18))
@@ -110,16 +113,16 @@ class PlayerManager(ctk.CTkToplevel):
         player_name_entry.bind("<KeyRelease>", lambda event: self.update_stronghold_ids(0))
 
         # Path by stronghold id
-        ctk.CTkLabel(frame, text="Stronghold Ids (0)", font=("Arial", 18), anchor="w").grid(row=2, column=0, padx=5, pady=(15, 5), sticky="nesw")
+        ctk.CTkLabel(frame, text="Stronghold Ids (0)", font=("Arial", 18), anchor="w").grid(row=2, column=0, padx=5, sticky="nesw")
 
         # Textbox for Stronghold Ids
         textbox = ctk.CTkTextbox(frame, font=("Arial", 18))
         textbox.grid(row=3, column=0, padx=5, pady=5, sticky="nesw")
         textbox.bind("<KeyRelease>", lambda event: self.update_stronghold_ids(0))
 
-        # # Update Button 
-        # ctk.CTkButton(frame, text="Update", font=("Arial", 18), command=lambda i=0: self.update_stronghold_ids(0)
-        #     ).grid(row=4, column=0, padx=5, pady=(0, 5), sticky="nesw")
+        # Complete All Button 
+        ctk.CTkButton(frame, text="Complete All", font=("Arial", 18), command=lambda i=0: self.complete_all_strongholds(0)
+            ).grid(row=4, column=0, padx=5, pady=(0, 5), sticky="nesw")
 
 
 
@@ -127,10 +130,10 @@ class PlayerManager(ctk.CTkToplevel):
         # Get Number of players
         try:
             num_players = int(self.num_players_entry.get())
-            if num_players <= 0:
+            if num_players <= 0 or num_players >= 15:
                 raise ValueError
         except:
-            print("Invalid number of players.")
+            CTkMessagebox.messagebox(title="Invalid number of players", text="Number of players must be\ngreater than 0 and less than 15.", sound='off')
             return
         
         # Set Num of Players in object
@@ -159,7 +162,7 @@ class PlayerManager(ctk.CTkToplevel):
             frame.grid(row=0, column=i, pady=5, padx=5, sticky="nsw")
 
             # Player Id
-            ctk.CTkLabel(frame, text=f"Player {i+1}", font=("Arial", 18)).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+            ctk.CTkLabel(frame, text=f"Player {i+1}", font=("Arial", 18), text_color=self.colors[i]).grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
             # Player Name
             player_name_entry = ctk.CTkEntry(frame, placeholder_text="Name", font=("Arial", 18))
@@ -167,12 +170,17 @@ class PlayerManager(ctk.CTkToplevel):
             player_name_entry.bind("<KeyRelease>", lambda event, idx=i: self.update_stronghold_ids(idx))
 
             # Path by stronghold id
-            ctk.CTkLabel(frame, text="Stronghold Ids:", font=("Arial", 18), anchor="w").grid(row=2, column=0, padx=5, pady=(15, 5), sticky="nesw")
+            ctk.CTkLabel(frame, text="Stronghold Ids (0)", font=("Arial", 18), anchor="w").grid(row=2, column=0, padx=5, sticky="nesw")
 
             # Textbox for Stronghold Ids
             textbox = ctk.CTkTextbox(frame, font=("Arial", 18))
             textbox.grid(row=3, column=0, padx=5, pady=5, sticky="nesw")
             textbox.bind("<KeyRelease>", lambda event, idx=i: self.update_stronghold_ids(idx))
+
+            # Complete All Button 
+            ctk.CTkButton(frame, text="Complete All", font=("Arial", 18), command=lambda idx=i: self.complete_all_strongholds(idx)
+                ).grid(row=4, column=0, padx=5, pady=(0, 5), sticky="nesw")
+
 
         # Update Everything
         self.update_textbox()
@@ -196,9 +204,6 @@ class PlayerManager(ctk.CTkToplevel):
             textbox.insert("end", textbox_text)
 
 
-    def update_all_stronghold_ids(self):
-        for i in range(len(self.player_paths)):
-            self.update_stronghold_ids(i)
 
     def update_stronghold_ids(self, player_index):
 
@@ -224,7 +229,7 @@ class PlayerManager(ctk.CTkToplevel):
 
         new_path = [[player_index, str(name_entry.get())]] 
 
-        for stronghold_id in stronghold_ids:
+        for i, stronghold_id in enumerate(stronghold_ids):
 
             # Look up SH object from stronghold_objects
             sh = next((sh for sh in self.stronghold_objects if sh.number == stronghold_id), None)
@@ -238,6 +243,15 @@ class PlayerManager(ctk.CTkToplevel):
 
             sh.update_name(str(name_entry.get()))
 
+            # If the first one in the path, set active
+            if self.first_active_bool.get() and i == 0:
+                sh.set_status("ACT")
+
+            # Point to next stronghold so next stronghold in path to active
+            if self.auto_active_bool.get():
+                sh.next_sh = stronghold_ids[i + 1] if i < len(stronghold_ids) - 1 else None
+
+
         # Save back into main structure
         self.player_paths[player_index] = new_path
 
@@ -246,6 +260,14 @@ class PlayerManager(ctk.CTkToplevel):
         # Update Everything
         #self.update_textbox()
         self.draw_paths_on_canvas()
+
+
+
+    def complete_all_strongholds(self, player_index):
+        for stronghold_id, _, _ in self.player_paths[player_index][1:]:
+            sh = next((sh for sh in self.stronghold_objects if sh.number == stronghold_id), None)
+
+            sh.set_status("COM")
 
         
 
@@ -271,12 +293,10 @@ class PlayerManager(ctk.CTkToplevel):
         offset_x = (self.parent.canvas.winfo_width() - side) // 2
         offset_y = (self.parent.canvas.winfo_height() - side) // 2
 
-        colors = ["cyan", "magenta", "yellow", "orange", "purple"]
-
         # Iterate through each player's path
         for idx, player_path in enumerate(self.player_paths):
 
-            color = colors[idx % len(colors)]
+            color = self.colors[idx % len(self.colors)]
             prev_x, prev_y = None, None
             
             for point in player_path[1:]:
@@ -316,7 +336,7 @@ class PlayerManager(ctk.CTkToplevel):
         for sh in self.parent.stronghold_objects:
 
             # Skip if already complete
-            if sh.status_var.get() == "Complete":
+            if sh.widget_status == "COM":
                 continue
 
             angle = sh.angle % 360  # Normalize
@@ -330,21 +350,13 @@ class PlayerManager(ctk.CTkToplevel):
             new_paths[player_index].append([sh.number, sh.x, sh.z])
 
 
-        # Get time per path
-        time_per_path = 10
-        try:
-            time_per_path = int(self.time_per_path_entry.get())
-        except ValueError:
-            pass
-
-
         # Sort each player's strongholds by ID
         for i in range(self.num_of_players):
 
             sh_points = new_paths[i]
             first_entry = sh_points[0]
 
-            sorted_strongholds = make_stronghold_list(sh_points[1:], time_per_path)
+            sorted_strongholds = make_stronghold_list(sh_points[1:], math.ceil(10 / self.num_of_players)) # Hardcoded, should take around 10 seconds to calculate
             new_paths[i] = [first_entry] + sorted_strongholds
 
         # Save into main structure
@@ -359,7 +371,8 @@ class PlayerManager(ctk.CTkToplevel):
             count_label.configure(text=f"Stronghold Ids ({len(new_paths[i]) - 1})")
 
         # Update all sh ids
-        self.update_all_stronghold_ids()
+        for i in range(len(self.player_paths)):
+            self.update_stronghold_ids(i)
 
         # Finally redraw paths
         self.draw_paths_on_canvas()

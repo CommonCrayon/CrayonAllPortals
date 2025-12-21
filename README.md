@@ -5,7 +5,7 @@
 
 2. Run downloaded executable file.
 
-3. TODO
+![](images/example.png?raw=true)
 
 # BUILD
 
@@ -18,5 +18,5 @@ python -m pip install pyinstaller
 
 ### Build with PowerShell:
 `
-python -m PyInstaller --onefile --windowed --name CrayonAllPortals_v0_1 --add-data "simple_rings.png;." CrayonAllPortals.py
+python -m PyInstaller --onefile --windowed --icon=icon.ico --collect-all ortools --name CrayonAllPortals_v1_0 --add-data "simple_rings.png;." CrayonAllPortals.py
 `
