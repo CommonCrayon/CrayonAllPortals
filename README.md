@@ -1,10 +1,4 @@
-
-# Usage
-
-1. Download CrayonAllPortals.exe from releases.
-
-2. Run downloaded executable file.
-
+# Information
 
 ## Main Page
 
@@ -36,6 +30,12 @@ You can additionally, set "Ring Status Set" which decides the faith of what happ
 Here you can customise paths and generate them too. Generation takes about 10 seconds.
 
 ![](images/player_manager.png?raw=true)
+
+
+# Usage
+
+1. Download CrayonAllPortals_v1_0.exe from releases.
+2. Run the downloaded executable file.
 
 
 # BUILD
