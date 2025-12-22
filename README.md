@@ -1,5 +1,9 @@
 # Information
 
+This is a tool designed for Minecraft Speedrunning in the All Portals category. 
+It allows for both solo and coop Stronghold Ring calculations and best path traversals.
+In coop only 1 player needs to download and use this tool.
+
 ## Main Page
 
 ![](images/main_page.png?raw=true)
