@@ -95,7 +95,7 @@ All Portals Paths
 
 Additionally, we can use the tool to track each stronghold 1 by 1. To update the Overview Canvas and give us a cool graph or timelapse of the live stronghold count. However, this really is just a waste of time for most people and players should just focus on complete their whole paths. 
 
-# BUILD
+# Build
 
 ### Install Packages
 `
