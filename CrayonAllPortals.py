@@ -123,7 +123,7 @@ class App(ctk.CTk):
         self.canvas.bind("<Configure>", self.resize_canvas_frame)
 
         #======================================================================================================================
-        # Player Path
+        # Mini Menu
         #======================================================================================================================
         mini_menu_frame = ctk.CTkFrame(self)
         mini_menu_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
@@ -139,7 +139,7 @@ class App(ctk.CTk):
         ctk.CTkLabel(mini_menu_frame, text="Ring Status Set:", font=("Arial", 18)).grid(row=2, column=0, padx=(10, 0), pady=10, sticky="nesw")
         self.ring_set_status_combobox = ctk.CTkComboBox(mini_menu_frame, values=["Remaining", "Active", "Complete"])
         self.ring_set_status_combobox.grid(row=2, column=1, padx=(0, 10), pady=10, sticky="nesw")
-        self.ring_set_status_combobox.set("Active")
+        self.ring_set_status_combobox.set("Complete")
 
         #======================================================================================================================
         # Strongholds List Panels
