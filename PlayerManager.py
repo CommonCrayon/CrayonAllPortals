@@ -53,12 +53,6 @@ class PlayerManager(ctk.CTkToplevel):
         # Number of players Button Set
         ctk.CTkButton(settings_frame, text="SET", font=("Arial", 18), width=300, command=self.set_player_number).grid(row=2, column=0, columnspan=2, sticky="ns", padx=(5, 10), pady=5)
 
-
-        # Draw on Canvas Bool
-        self.canvas_draw_bool = ctk.BooleanVar(value=True)
-        ctk.CTkCheckBox(settings_frame, text="Draw on Canvas", font=("Arial", 18), variable=self.canvas_draw_bool, command=self.draw_paths_on_canvas
-            ).grid(row=3, column=0, columnspan=2, padx=10, pady=(20, 10))
-
         #======================================================================================================================
         # Player Stronghold Assigner
         #======================================================================================================================
@@ -68,16 +62,6 @@ class PlayerManager(ctk.CTkToplevel):
         path_gen_frame.grid_columnconfigure(0, weight=1)
 
         ctk.CTkLabel(path_gen_frame, text="Path Generator", font=("Arial", 22)).grid(row=0, column=0, sticky="nesw", padx=10, pady=10)
-
-        # Set first to Active in Path Bool
-        self.first_active_bool = ctk.BooleanVar(value=True)
-        ctk.CTkCheckBox(path_gen_frame, text="Make First Stronghold Active on Path", font=("Arial", 18), variable=self.first_active_bool
-            ).grid(row=1, column=0, padx=10, pady=10)
-        
-        # Auto Set Active in Path Bool
-        self.auto_active_bool = ctk.BooleanVar(value=True)
-        ctk.CTkCheckBox(path_gen_frame, text="Auto Set Stronghold Active on Path", font=("Arial", 18), variable=self.auto_active_bool
-            ).grid(row=2, column=0, padx=10, pady=10)
 
         # Generate a path and assign strongholds to players
         ctk.CTkButton(path_gen_frame, text="Generate", font=("Arial", 18), width=300, command=self.generate_path).grid(row=3, column=0, sticky="ns", padx=10, pady=(10, 6))
@@ -121,8 +105,7 @@ class PlayerManager(ctk.CTkToplevel):
         textbox.bind("<KeyRelease>", lambda event: self.update_stronghold_ids(0))
 
         # Complete All Button 
-        ctk.CTkButton(frame, text="Complete All", font=("Arial", 18), command=lambda i=0: self.complete_all_strongholds(0)
-            ).grid(row=4, column=0, padx=5, pady=(0, 5), sticky="nesw")
+        ctk.CTkButton(frame, text="Complete All", font=("Arial", 18), command=lambda i=0: self.complete_all_strongholds(0)).grid(row=4, column=0, padx=5, pady=(0, 5), sticky="nesw")
 
 
 

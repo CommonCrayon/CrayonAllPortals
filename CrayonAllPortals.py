@@ -38,23 +38,22 @@ class App(ctk.CTk):
         # ctk.set_widget_scaling(1)  # widget dimensions and text size
         # ctk.set_window_scaling(1)  # window geometry dimensions
 
-        self.geometry("1280x980")
+        # self.geometry("1280x980")
 
         self.stronghold_objects = []
         self.image_size = 869 # Size of simple_rings.png
         self.player_management_window = None
 
         # Configure weight so scroll frames expand properly
-        self.grid_columnconfigure(0, weight=1)
+        # self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
-        self.grid_columnconfigure(2, weight=1)
-        self.grid_columnconfigure(3, weight=1)
 
-        self.grid_rowconfigure(0, weight=2)
+        # self.grid_rowconfigure(0, weight=2)
         self.grid_rowconfigure(1, weight=1)
 
         # Contains all widget references for strongholds
         self.stronghold_widgets = []
+        self.colors = ["cyan", "magenta", "yellow", "orange", "purple", "red", "blue", "green", "brown", "pink", "lime", "navy", "teal", "gold"]
 
         #======================================================================================================================
         # Stronghold Ring Reference
@@ -108,7 +107,7 @@ class App(ctk.CTk):
         #======================================================================================================================
 
         self.image_frame = ctk.CTkFrame(self)
-        self.image_frame.grid(row=0, column=1, columnspan=2, sticky="nsew", pady=10)
+        self.image_frame.grid(row=0, column=1, columnspan=2, sticky="nsew", pady=10, padx=(0, 10))
 
         self.image_frame.grid_columnconfigure(0, weight=1)
         self.image_frame.grid_rowconfigure(0, weight=1)
@@ -123,155 +122,84 @@ class App(ctk.CTk):
         self.canvas.bind("<Configure>", self.resize_canvas_frame)
 
         #======================================================================================================================
-        # Mini Menu
+        # Player Manager Menu
         #======================================================================================================================
-        mini_menu_frame = ctk.CTkFrame(self)
-        mini_menu_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
-        mini_menu_frame.grid_columnconfigure(0, weight=1)
-        mini_menu_frame.grid_columnconfigure(1, weight=1)
+        player_manager_menu_frame = ctk.CTkFrame(self)
+        player_manager_menu_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
+        player_manager_menu_frame.grid_columnconfigure(0, weight=1)
+        player_manager_menu_frame.grid_columnconfigure(1, weight=1)
 
-        ctk.CTkLabel(mini_menu_frame, text="Mini Menu", font=("Arial", 20)).grid(row=0, column=0, columnspan=2, sticky="new", padx=10, pady=(10, 20))
+        ctk.CTkLabel(player_manager_menu_frame, text="Player Manager Menu", font=("Arial", 20)).grid(row=0, column=0, columnspan=2, sticky="new", pady=(10, 5))
 
-        # Player Manager Button
-        ctk.CTkButton(mini_menu_frame, text="Open Player Manager", font=("Arial", 18, "bold"), command=self.player_manager).grid(row=1, column=0, columnspan=2, padx=10, pady=10, sticky="nesw")
+        ctk.CTkLabel(player_manager_menu_frame, text="Players:", font=("Arial", 18)).grid(row=1, column=0, sticky="e", pady=5, padx=5)
+        # Number of players entry box
+        self.num_players_entry = ctk.CTkEntry(player_manager_menu_frame, textvariable=ctk.StringVar(value="1"), font=("Arial", 18))
+        self.num_players_entry.grid(row=1, column=1, sticky="w", pady=5)
 
-        # When setting a stronghold ring, what happens to the stronghold that was used to set it.
-        ctk.CTkLabel(mini_menu_frame, text="Ring Status Set:", font=("Arial", 18)).grid(row=2, column=0, padx=(10, 0), pady=10, sticky="nesw")
-        self.ring_set_status_combobox = ctk.CTkComboBox(mini_menu_frame, values=["Remaining", "Active", "Complete"])
-        self.ring_set_status_combobox.grid(row=2, column=1, padx=(0, 10), pady=10, sticky="nesw")
-        self.ring_set_status_combobox.set("Complete")
+        # Number of players Button Set
+        ctk.CTkButton(player_manager_menu_frame, text="SET", font=("Arial", 18), command=self.set_player_number).grid(row=2, column=0, columnspan=2, sticky="nesw", pady=5, padx=10)
+
+        # Generate a path and assign strongholds to players
+        ctk.CTkButton(player_manager_menu_frame, text="Generate Path", font=("Arial", 18), command=self.generate_path).grid(row=3, column=0, columnspan=2, sticky="nesw", pady=5, padx=10)
+
+        # Copy to Clipboard
+        ctk.CTkButton(player_manager_menu_frame, text="Copy to Clipboard", font=("Arial", 18), command=self.copy_paths_to_clipboard).grid(row=4, column=0, columnspan=2, sticky="nesw", pady=(5, 10), padx=10)
 
         #======================================================================================================================
-        # Strongholds List Panels
+        # Scrollable Window for each player
         #======================================================================================================================
-        # ===== ACTIVE STRONGHOLDS =====
-        self.active_count = ctk.StringVar(value="Active (0)")
+        scrollable_window_frame = ctk.CTkFrame(self)
+        scrollable_window_frame.grid(row=1, column=1, sticky="nsew", padx=(0, 10), pady=(0, 10))
 
-        active_panel = ctk.CTkFrame(self)
-        active_panel.grid(row=0, column=3, rowspan=2, sticky="nsew", padx=10, pady=10)
+        scrollable_window_frame.grid_columnconfigure(0, weight=1)
+        scrollable_window_frame.grid_rowconfigure(0, weight=1)
 
-        active_label = ctk.CTkLabel(active_panel, textvariable=self.active_count, font=("Arial", 20))
-        active_label.grid(row=0, column=0, sticky="ne", padx=5, pady=5)
+        self.scrollable_window = ctk.CTkScrollableFrame(scrollable_window_frame, orientation="horizontal")
+        self.scrollable_window.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
-        # Search variable
-        self.active_search_var = ctk.StringVar()
-        self.active_search_var.trace_add("write", self.filter_active_strongholds)
-        active_search_entry = ctk.CTkEntry(active_panel, textvariable=self.active_search_var, width=64, font=("Arial", 16))
-        active_search_entry.grid(row=0, column=1, sticky="ne", padx=8, pady=(6, 0))
+        #======================================================================================================================
+        # Default 1 Player Frame
+        #======================================================================================================================
+        frame = ctk.CTkFrame(self.scrollable_window)
+        frame.grid(row=0, column=0, pady=5, padx=5, sticky="nsw")
 
-        # List
-        self.active_list = ctk.CTkScrollableFrame(active_panel, width=256)
-        self.active_list.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
+        # Player Id
+        ctk.CTkLabel(frame, text=f"Player 1", font=("Arial", 18), text_color=self.colors[0]).grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
-        active_panel.grid_rowconfigure(1, weight=1)
-        active_panel.grid_columnconfigure(0, weight=1)
-        active_panel.grid_columnconfigure(1, weight=1)
+        # Player Name
+        player_name_entry = ctk.CTkEntry(frame, placeholder_text="Name", font=("Arial", 18))
+        player_name_entry.grid(row=1, column=0, padx=5, pady=(0,5), sticky="nesw")
+        player_name_entry.bind("<KeyRelease>", lambda event: self.update_stronghold_ids(0))
 
-        # ===== REMAINING STRONGHOLDS =====
-        self.remaining_count = ctk.StringVar(value="Remain (0)")
+        # Path by stronghold id
+        ctk.CTkLabel(frame, text="Stronghold Ids (0)", font=("Arial", 18), anchor="w").grid(row=2, column=0, padx=5, sticky="nesw")
 
-        remaining_panel = ctk.CTkFrame(self)
-        remaining_panel.grid(row=1, column=1, sticky="nsew", padx=(0, 5), pady=(0, 10))
+        # Textbox for Stronghold Ids
+        textbox = ctk.CTkTextbox(frame, font=("Arial", 18))
+        textbox.grid(row=3, column=0, padx=5, pady=5, sticky="nesw")
+        textbox.bind("<KeyRelease>", lambda event: self.update_stronghold_ids(0))
 
-        remaining_label = ctk.CTkLabel(remaining_panel, textvariable=self.remaining_count, font=("Arial", 20))
-        remaining_label.grid(row=0, column=0, sticky="ne", padx=5, pady=5)
-
-        # Search variable
-        self.remaining_search_var = ctk.StringVar()
-        self.remaining_search_var.trace_add("write", self.filter_remaining_strongholds)
-        remaining_search_entry = ctk.CTkEntry(remaining_panel, textvariable=self.remaining_search_var, width=64, font=("Arial", 16))
-        remaining_search_entry.grid(row=0, column=1, sticky="ne", padx=8, pady=(6, 0))
-
-        # List
-        self.remaining_list = ctk.CTkScrollableFrame(remaining_panel, width=256)
-        self.remaining_list.grid(row=2, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
-
-        remaining_panel.grid_rowconfigure(2, weight=1)
-        remaining_panel.grid_columnconfigure(0, weight=1)
-        remaining_panel.grid_columnconfigure(1, weight=1)
-
-        # ===== COMPLETED STRONGHOLDS =====
-        self.completed_count = ctk.StringVar(value="Complete (0)")
-
-        completed_panel = ctk.CTkFrame(self)
-        completed_panel.grid(row=1, column=2, sticky="nsew", padx=(5, 0), pady=(0, 10))
-
-        completed_label = ctk.CTkLabel(completed_panel, textvariable=self.completed_count, font=("Arial", 20))
-        completed_label.grid(row=0, column=0, sticky="ne", padx=5, pady=5)
-
-        # Search variable
-        self.complete_search_var = ctk.StringVar()
-        self.complete_search_var.trace_add("write", self.filter_complete_strongholds)
-        complete_search_entry = ctk.CTkEntry(completed_panel, textvariable=self.complete_search_var, width=64, font=("Arial", 16))
-        complete_search_entry.grid(row=0, column=1, sticky="ne", padx=8, pady=(6, 0))
-
-        self.completed_list = ctk.CTkScrollableFrame(completed_panel, width=256)
-        self.completed_list.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
-
-        completed_panel.grid_rowconfigure(1, weight=1)
-        completed_panel.grid_columnconfigure(0, weight=1)
-        completed_panel.grid_columnconfigure(1, weight=1)
+        # Complete All Button 
+        ctk.CTkButton(frame, text="Complete All", font=("Arial", 18), command=lambda i=0: self.update_stronghold_ids(0)).grid(row=4, column=0, padx=5, pady=(0, 5), sticky="nesw")
 
 
     #==========================================================================================
-    # STRONGHOLD FILTERS
-    #==========================================================================================
 
-    def filter_remaining_strongholds(self, *_):
-        query = self.remaining_search_var.get().strip()
+    def set_player_number():
+        pass
 
-        # Get filtered stronghold widgets
-        if not query:
-            filtered = self.stronghold_widgets
-        else:
-            filtered = [s for s in self.stronghold_widgets if query.lower() in str(s.number)]
+    def generate_path():
+        pass
 
-        count = 0
+    def copy_paths_to_clipboard():
+        pass
 
-        # Update Filter
-        for sh in self.stronghold_widgets:
-            count += sh.update_from_filter("REM", set(filtered))
+    def update_stronghold_ids():
+        pass
 
-        # Update counts
-        self.remaining_count.set(f"Remain ({count})")
-
-
-    def filter_active_strongholds(self, *_):
-        query = self.active_search_var.get().strip()
-
-        # Get filtered stronghold widgets
-        if not query:
-            filtered = self.stronghold_widgets
-        else:
-            filtered = [s for s in self.stronghold_widgets if query.lower() in str(s.number)]
-
-        count = 0
-
-        # Update Filter
-        for sh in self.stronghold_widgets:
-            count += sh.update_from_filter("ACT", set(filtered))
-
-        # Update counts
-        self.active_count.set(f"Active ({count})")
-
-
-    def filter_complete_strongholds(self, *_):
-        query = self.complete_search_var.get().strip()
-
-        # Get filtered stronghold widgets
-        if not query:
-            filtered = self.stronghold_widgets
-        else:
-            filtered = [s for s in self.stronghold_widgets if query.lower() in str(s.number)]
-
-        count = 0
-
-        # Update Filter
-        for sh in self.stronghold_widgets:
-            count += sh.update_from_filter("COM", set(filtered))
-
-        # Update counts
-        self.completed_count.set(f"Complete ({count})")
+    def update_stronghold_ids():
+        pass
+    
 
     #==========================================================================================
 
@@ -301,8 +229,6 @@ class App(ctk.CTk):
             return
 
         print(f"Updated Ring {ring_val+1} → X={x_val}, Z={z_val}")
-
-
 
         # Remove OLD strongholds from this stronghold ring
         ring_to_remove = [sh for sh in self.stronghold_objects if sh.ring == ring_val]
@@ -346,16 +272,6 @@ class App(ctk.CTk):
         self.filter_remaining_strongholds()
         self.filter_active_strongholds()
         self.filter_complete_strongholds()
-
-    
-    def player_manager(self):
-        if self.player_management_window is None or not self.player_management_window.winfo_exists():
-            self.player_management_window = PlayerManager(self, self.stronghold_objects)
-        else:
-            self.player_management_window.deiconify()
-            self.player_management_window.focus()
-
-
 
     def resize_canvas_frame(self, event):
         # Canvas size
