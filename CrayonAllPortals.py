@@ -141,7 +141,7 @@ class App(ctk.CTk):
         self.num_players_entry.grid(row=1, column=1, sticky="w", pady=5)
 
         # Number of players Button Set
-        ctk.CTkButton(player_manager_menu_frame, text="SET", font=("Arial", 18), command=self.set_player_number).grid(row=2, column=0, columnspan=2, sticky="nesw", pady=5, padx=10)
+        ctk.CTkButton(player_manager_menu_frame, text="Set Players", font=("Arial", 18), command=self.set_player_number).grid(row=2, column=0, columnspan=2, sticky="nesw", pady=5, padx=10)
 
         # Generate a path and assign strongholds to players
         ctk.CTkButton(player_manager_menu_frame, text="Generate Path", font=("Arial", 18), command=self.generate_path).grid(row=3, column=0, columnspan=2, sticky="nesw", pady=5, padx=10)
@@ -411,22 +411,52 @@ class App(ctk.CTk):
     def update_ring(self, ring, x, z):
 
         ring_val = int(ring.get()) - 1
+        F3Cprefix = "/execute in minecraft:overworld run tp @s"
+        # "/execute in minecraft:overworld run tp @s 244.14 70.00 83.08 -45.56 1.22" 
 
-        # Validate X
+        # Read inputs
         x_raw = x.get().strip()
-        try:
-            x_val = int(x_raw)
-        except ValueError:
-            CTkMessagebox.messagebox(title="Invalid X Value", text="X must be an integer.", sound='off')
-            return
-
-        # Validate Z
         z_raw = z.get().strip()
-        try:
-            z_val = int(z_raw)
-        except ValueError:
-            CTkMessagebox.messagebox(title="Invalid Z Value", text="Z must be an integer.", sound='off')
-            return
+
+        # Check if either input contains the F3+C command
+        if F3Cprefix in x_raw:
+            raw_f3 = x_raw
+        elif F3Cprefix in z_raw:
+            raw_f3 = z_raw
+        else:
+            raw_f3 = None
+
+
+        if raw_f3:
+            try:
+                # Parse values
+                floatList = raw_f3.split(F3Cprefix)[1].strip().split()
+                
+                x_val = int(float(floatList[0]))
+                z_val = int(float(floatList[2]))
+
+                # Update both entry fields
+                x.set(str(x_val))
+                z.set(str(z_val))
+
+            except (IndexError, ValueError):
+                CTkMessagebox.messagebox(title="Invalid F3+C String", text="Could not parse coordinates from the F3+C string.", sound='off')
+                return
+        else:
+            # X Validation
+            try:
+                x_val = int(x_raw)
+            except ValueError:
+                CTkMessagebox.messagebox(title="Invalid X Value", text="X must be an integer.", sound='off')
+                return
+
+            # Z Validation
+            try:
+                z_val = int(z_raw)
+            except ValueError:
+                CTkMessagebox.messagebox(title="Invalid Z Value", text="Z must be an integer.", sound='off')
+                return
+
 
         # Validate Bounds. Check if distance within bounds. If not show error
         if not (BOUNDS_PER_RING[ring_val][0] <= math.sqrt(x_val**2 + z_val**2) <= BOUNDS_PER_RING[ring_val][1]):
