@@ -43,38 +43,14 @@ class StrongholdObject:
             except Exception:
                 pass
 
-
-        # Style presets by status
-        STATUS_STYLE = {
-            "ACT": {
-                "color": "#1976D2",
-                "text":  "#FFFFFF",
-                "font_size": 18,
-                "radius": 18,
-            },
-            "REM": {
-                "color": "#DC8D8C",
-                "text":  "#FFFFFF",
-                "font_size": 14,
-                "radius": 14,
-            },
-            "COM": {
-                "color": "#43A047",
-                "text":  "#FFFFFF",
-                "font_size": 14,
-                "radius": 14,
-            },
-        }
-
-        # Get style for current status (fallback: Remaining)
+        # Change color depending on ring stronghold or not.
         if self.number in STRONGHOLDS_RING_START:
-            style = STATUS_STYLE["COM"]
+            dot_color  = "#43A047"
         else:
-            style = STATUS_STYLE["REM"]
+            dot_color  = "#DC8D8C"
 
-        dot_color  = style["color"]
-        font_size  = style["font_size"]
-        dot_radius = style["radius"]
+        font_size  = 18
+        dot_radius = 18
         
 
         # Draw new dot and text

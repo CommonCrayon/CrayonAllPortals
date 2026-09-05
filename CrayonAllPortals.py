@@ -6,7 +6,7 @@ import numpy as np
 import sys, os, math
 
 from StrongholdObject import StrongholdObject
-from PathSolver import make_stronghold_list
+from PathSolver import solve_multi_player_paths
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -144,7 +144,7 @@ class App(ctk.CTk):
         ctk.CTkButton(player_manager_menu_frame, text="Set Players", font=("Arial", 18), command=self.set_player_number).grid(row=2, column=0, columnspan=2, sticky="nesw", pady=5, padx=10)
 
         # Generate a path and assign strongholds to players
-        ctk.CTkButton(player_manager_menu_frame, text="Generate Path", font=("Arial", 18), command=self.generate_path).grid(row=3, column=0, columnspan=2, sticky="nesw", pady=5, padx=10)
+        ctk.CTkButton(player_manager_menu_frame, text="Generate Paths (1 Min)", font=("Arial", 18), command=self.generate_path).grid(row=3, column=0, columnspan=2, sticky="nesw", pady=5, padx=10)
 
         # Copy to Clipboard
         ctk.CTkButton(player_manager_menu_frame, text="Copy to Clipboard", font=("Arial", 18), command=self.copy_paths_to_clipboard).grid(row=4, column=0, columnspan=2, sticky="nesw", pady=(5, 10), padx=10)
@@ -292,42 +292,29 @@ class App(ctk.CTk):
     #==========================================================================================
 
     def generate_path(self):
-        # Clear existing paths
+        valid_strongholds = []
+
+        # Skip any strongholds that were first in the ring.
+        for sh in self.stronghold_objects:
+            if sh.number not in STRONGHOLDS_RING_START:
+                valid_strongholds.append([sh.number, sh.x, sh.z])
+
+        # Compute optimal path
+        # Tests by distances per path
+        # 60 sec : [110236.1681, 106672.9902, 109419.0063, 108808.9393]
+        # 45 sec : [111472.6683, 111275.6518, 111623.4481, 108196.961]
+        # 30 sec : [114907.0383, 115512.5813, 115739.5881, 115753.8933]
+        # 10 sec : [117541.4043, 118363.0013, 118536.4001, 118293.1132]
+        player_routes, route_distances = solve_multi_player_paths(points=valid_strongholds, num_players=self.num_of_players, time_limit_sec=60)
+
+        # print(route_distances)
+
+        # Reconstruct player paths
         new_paths = []
         for i in range(self.num_of_players):
-            new_paths.append([[i, f"{self.colors[i]}"]])
+            player_header = [i, f"{self.colors[i]}"]
+            new_paths.append([player_header] + player_routes[i])
 
-
-        # ANGLE SPLITTING
-        angle_per_player = 360 / self.num_of_players
-
-        for sh in self.stronghold_objects:
-
-            # Skip any stronghold ring starters
-            if sh.number in STRONGHOLDS_RING_START:
-                continue
-
-            angle = sh.angle % 360  # Normalize
-
-            # Determine player index
-            player_index = int(angle // angle_per_player)
-            if player_index >= self.num_of_players:
-                player_index = self.num_of_players - 1
-
-            # Add stronghold to the player
-            new_paths[player_index].append([sh.number, sh.x, sh.z])
-
-
-        # Sort each player's strongholds by ID
-        for i in range(self.num_of_players):
-
-            sh_points = new_paths[i]
-            first_entry = sh_points[0]
-
-            sorted_strongholds = make_stronghold_list(sh_points[1:], math.ceil(10 / self.num_of_players)) # Hardcoded, should take around 10 seconds to calculate
-            new_paths[i] = [first_entry] + sorted_strongholds
-
-        # Save into main structure
         self.player_paths = new_paths
 
         # Update textboxes
