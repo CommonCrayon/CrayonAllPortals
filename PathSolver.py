@@ -4,6 +4,11 @@ from ortools.constraint_solver import pywrapcp, routing_enums_pb2
 OR_SCALE = 10_000
 
 
+    
+
+
+
+
 def solve_multi_player_paths(points: list[list], num_players: int, time_limit_sec: int) -> tuple[list[list], list[float]]:
 
     if not points or num_players <= 0:
@@ -62,7 +67,7 @@ def solve_multi_player_paths(points: list[list], num_players: int, time_limit_se
 
     # Search parameters
     params = pywrapcp.DefaultRoutingSearchParameters()
-    params.first_solution_strategy = routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+    params.first_solution_strategy = routing_enums_pb2.FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION
     params.local_search_metaheuristic = routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
     params.time_limit.seconds = time_limit_sec
 
