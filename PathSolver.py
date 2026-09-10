@@ -14,10 +14,7 @@ def solve_multi_player_paths(strongholds: list[list], num_players: int, computat
 
     # Coordinate list: Start at [0 0] + stronghold list + dummy end node
     coords = [[-1, 0, 0]] + strongholds + [[-2, 0, 0]]
-    dummy_origin_node = coords[0]
     dummy_end_node = len(coords) - 1 # Dummy that is cost of 0.
-
-    print(coords)
 
     # Setup RoutingIndexManager:
     # All paths start at [0, 0] and end whereever best (dummy_end_node).
@@ -80,25 +77,12 @@ def solve_multi_player_paths(strongholds: list[list], num_players: int, computat
             next_index = solution.Value(routing.NextVar(index))
 
             # Accumulate transit cost
-            normal_distance = routing.GetArcCostForVehicle(index, next_index, player_id)
-            # origin_distance = routing.GetArcCostForVehicle(0, next_index, player_id)
-
-            # if index > 0:
-            #     from_previous_distance = routing.GetArcCostForVehicle(index - 1, next_index, player_id)
+            distance_of_route += routing.GetArcCostForVehicle(index, next_index, player_id)
 
             # Ignore start orgin node [0 0] and dummy end node. Otherwise append route
             if current_index != 0 and current_index != dummy_end_node:
             
                 sh_num, x, z = strongholds[current_index - 1]
-
-                # # Player should go back to spawn to get to this stronghold
-                # if (origin_distance < normal_distance and origin_distance < from_previous_distance):
-                #     print(str(sh_num) + " SPAWN")
-
-                # # Player should not break bed at portal
-                # elif (from_previous_distance < normal_distance and from_previous_distance <= origin_distance):
-                #     print(str(sh_num) + " KEEP BED")
-
                 route.append([sh_num, x, z])
 
             # print("=======================")
@@ -106,6 +90,6 @@ def solve_multi_player_paths(strongholds: list[list], num_players: int, computat
 
         # Append to list to be returned.
         player_routes.append(route)
-        player_distances.append(distance_of_route / OR_SCALE)
+        player_distances.append((distance_of_route / OR_SCALE)/8)
 
     return player_routes, player_distances

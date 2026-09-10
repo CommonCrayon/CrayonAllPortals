@@ -305,7 +305,8 @@ class App(ctk.CTk):
         # 10 sec : [117541.4043, 118363.0013, 118536.4001, 118293.1132]
         player_routes, route_distances = solve_multi_player_paths(strongholds=valid_strongholds, num_players=self.num_of_players, computation_time=60)
 
-        # print(route_distances)
+        for distance in route_distances:
+            print(f"{int(distance)} Nether Blocks")
 
         # Reconstruct player paths
         new_paths = []

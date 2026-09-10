@@ -38,7 +38,7 @@ Here you can customise paths and generate them too. Generation takes about 10 se
 
 # Usage
 
-1. Download CrayonAllPortals_v1_0.exe from releases.
+1. Download CrayonAllPortals_v1_2.exe from releases.
 2. Run the downloaded executable file.
 3. You will be presented with the Main Page.
    
@@ -106,5 +106,5 @@ python -m pip install pyinstaller
 
 ### Build with PowerShell:
 `
-python -m PyInstaller --onefile --windowed --icon=icon.ico --collect-all ortools --name CrayonAllPortals_v1_0 --add-data "simple_rings.png;." CrayonAllPortals.py
+python -m PyInstaller --onefile --windowed --icon=icon.ico --collect-all ortools --name CrayonAllPortals_v1_2 --add-data "simple_rings.png;." CrayonAllPortals.py
 `
