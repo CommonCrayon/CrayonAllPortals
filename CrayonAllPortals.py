@@ -40,11 +40,11 @@ class App(ctk.CTk):
         # ctk.set_window_scaling(1)  # window geometry dimensions
 
         self.geometry("1000x980")
-
-        self.stronghold_objects = []
         self.image_size = 869 # Size of simple_rings.png
         self.player_management_window = None
 
+        # Stronghold variables
+        self.stronghold_objects = []
         self.num_of_players = 1
         self.player_paths = [[[0, ""]]]
 
@@ -56,7 +56,6 @@ class App(ctk.CTk):
         self.grid_rowconfigure(1, weight=1)
 
         # Contains all widget references for strongholds
-        self.stronghold_widgets = []
         self.colors = ["cyan", "magenta", "yellow", "orange", "purple", "red", "blue", "green", "brown", "pink", "lime", "navy", "teal", "gold"]
 
         #======================================================================================================================
@@ -174,7 +173,6 @@ class App(ctk.CTk):
         textbox = ctk.CTkTextbox(frame, font=("Arial", 18))
         textbox.grid(row=1, column=0, padx=5, pady=5, sticky="nesw")
         textbox.bind("<KeyRelease>", lambda event: self.update_stronghold_ids(0))
-
 
     #==========================================================================================
 
