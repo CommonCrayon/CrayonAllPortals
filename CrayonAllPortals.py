@@ -305,7 +305,7 @@ class App(ctk.CTk):
         # 45 sec : [111472.6683, 111275.6518, 111623.4481, 108196.961]
         # 30 sec : [114907.0383, 115512.5813, 115739.5881, 115753.8933]
         # 10 sec : [117541.4043, 118363.0013, 118536.4001, 118293.1132]
-        player_routes, route_distances = solve_multi_player_paths(points=valid_strongholds, num_players=self.num_of_players, time_limit_sec=60)
+        player_routes, route_distances = solve_multi_player_paths(strongholds=valid_strongholds, num_players=self.num_of_players, computation_time=60)
 
         # print(route_distances)
 
