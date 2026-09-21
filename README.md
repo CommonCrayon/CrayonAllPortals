@@ -20,7 +20,7 @@ This showcases the stronghold locations and once generated the paths and their s
 Here you can:
 - Set number of players to generate paths for.
 - Generate the paths, which is almost instant for 1 player but takes a minute for multiple.
-- "Copy To Clipboard" which copies all the pathing information for [CrayonNavAssist](https://github.com/CommonCrayon/CrayonAllPortalsJava).
+- "Copy for NavAssist" which copies all the pathing information for [CrayonNavAssist](https://github.com/CommonCrayon/CrayonAllPortalsJava).
 
 
 
@@ -86,5 +86,5 @@ python -m pip install pyinstaller
 
 ### Build with PowerShell:
 `
-python -m PyInstaller --onefile --windowed --icon=icon.ico --collect-all ortools --name CrayonAllPortals_v1_3 --add-data "simple_rings.png;." CrayonAllPortals.py
+python -m PyInstaller --onefile --windowed --icon=icon.ico --collect-all ortools --name CrayonAllPortals_v1_4 --add-data "simple_rings.png;." CrayonAllPortals.py
 `
