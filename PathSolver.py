@@ -66,7 +66,7 @@ def solve_player_paths(strongholds: list[list[int]], num_players: int, computati
     distance_dimension.SetGlobalSpanCostCoefficient(SPAN_COST_COEFFICIENT)
 
     params = pywrapcp.DefaultRoutingSearchParameters()
-    params.first_solution_strategy = routing_enums_pb2.FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION
+    params.first_solution_strategy = routing_enums_pb2.FirstSolutionStrategy.LOCAL_CHEAPEST_COST_INSERTION
 
     if num_players > 1:
         params.local_search_metaheuristic = routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
