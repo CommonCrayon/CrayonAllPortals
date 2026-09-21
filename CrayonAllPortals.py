@@ -368,11 +368,11 @@ class App(ctk.CTk):
 
                 elif shortest == "origin":
                     total_distance += distance_from_origin
-                    path_notes[i] = f" DO NOT PLACE BED! Travel from SPAWN is {round((distance_from_stronghold - distance_from_origin)/8)} nether blocks faster."
+                    path_notes[i] = f"DO NOT PLACE BED! {round((distance_from_stronghold - distance_from_origin)/8)} nether blocks faster via SPAWN."
 
                 elif shortest == "previous":
                     total_distance += distance_from_previous
-                    path_notes[i] = f" KEEP CURRENT BED! Travel from PREVIOUS stronghold is {round((distance_from_stronghold - distance_from_previous)/8)} nether blocks faster."
+                    path_notes[i] = f"KEEP CURRENT BED! {round((distance_from_stronghold - distance_from_previous)/8)} nether blocks faster via CURRENT bed."
 
             # Divide by 8 for Nether coordinates
             total_distance = round(total_distance / 8)
