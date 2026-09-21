@@ -6,7 +6,7 @@ import numpy as np
 import sys, os, math
 
 from StrongholdObject import StrongholdObject
-from PathSolver import solve_multi_player_paths
+from PathSolver import solve_player_paths
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -146,7 +146,7 @@ class App(ctk.CTk):
         ctk.CTkButton(player_manager_menu_frame, text="Generate Paths (1 Min)", font=("Arial", 18), command=self.generate_path).grid(row=3, column=0, columnspan=2, sticky="nesw", pady=5, padx=10)
 
         # Copy to Clipboard
-        ctk.CTkButton(player_manager_menu_frame, text="Copy to Clipboard", font=("Arial", 18), command=self.copy_paths_to_clipboard).grid(row=4, column=0, columnspan=2, sticky="nesw", pady=(5, 10), padx=10)
+        ctk.CTkButton(player_manager_menu_frame, text="Copy for NavAssist", font=("Arial", 18), command=self.copy_paths_to_clipboard).grid(row=4, column=0, columnspan=2, sticky="nesw", pady=(5, 10), padx=10)
 
         #======================================================================================================================
         # Scrollable Window for each player
@@ -303,10 +303,7 @@ class App(ctk.CTk):
         # 45 sec : [111472.6683, 111275.6518, 111623.4481, 108196.961]
         # 30 sec : [114907.0383, 115512.5813, 115739.5881, 115753.8933]
         # 10 sec : [117541.4043, 118363.0013, 118536.4001, 118293.1132]
-        player_routes, route_distances = solve_multi_player_paths(strongholds=valid_strongholds, num_players=self.num_of_players, computation_time=60)
-
-        for distance in route_distances:
-            print(f"{int(distance)} Nether Blocks")
+        player_routes = solve_player_paths(strongholds=valid_strongholds, num_players=self.num_of_players, computation_time=60)
 
         # Reconstruct player paths
         new_paths = []
@@ -334,13 +331,63 @@ class App(ctk.CTk):
     #==========================================================================================
 
     def copy_paths_to_clipboard(self):
-        # Build the export text
+
         export_text = "All Portals Paths\n"
 
-        for x in self.player_paths:
-            export_text += f'\n"{x[0][0]}:{x[0][1]}"\n'
-            for y in x[1:]:
-                export_text += f"[{y[0]},{y[1]},{y[2]}]\n"
+        for path in self.player_paths:
+            total_distance = 0
+
+            # Notes for individual strongholds
+            path_notes = {}
+
+            # Calculate distance between consecutive portals
+            for i in range(1, len(path) - 1):
+
+                current = path[i]
+                next_portal = path[i + 1]
+
+                # From current stronghold to next stronghold
+                distance_from_stronghold = math.hypot(current[1] - next_portal[1],  current[2] - next_portal[2])
+
+                # From Nether origin (0, 0) to next stronghold
+                distance_from_origin = math.hypot(next_portal[1], next_portal[2])
+
+                # From previous stronghold to next stronghold
+                if i > 1:
+                    previous = path[i - 1]
+                    distance_from_previous = math.hypot(previous[1] - next_portal[1], previous[2] - next_portal[2])
+                else:
+                    distance_from_previous = float("inf")
+
+                # Find the shortest option
+                distances = {"origin": distance_from_origin, "previous": distance_from_previous, "stronghold": distance_from_stronghold}
+                shortest = min(distances, key=distances.get)
+
+                if shortest == "stronghold":
+                    total_distance += distance_from_stronghold
+
+                elif shortest == "origin":
+                    total_distance += distance_from_origin
+                    path_notes[i] = f"DO NOT PLACE BED! {round((distance_from_stronghold - distance_from_origin)/8)} nether blocks faster via SPAWN."
+
+                elif shortest == "previous":
+                    total_distance += distance_from_previous
+                    path_notes[i] = f"KEEP CURRENT BED! {round((distance_from_stronghold - distance_from_previous)/8)} nether blocks faster via CURRENT bed."
+
+            # Divide by 8 for Nether coordinates
+            total_distance = round(total_distance / 8)
+
+            export_text += f'\nPath {path[0][0] + 1} = {total_distance} Nether Blocks\n'
+
+            for i, y in enumerate(path[1:], start=1):
+                # [stronghold_id, X_coordinate, Z_coordinate]
+                export_text += f"[{y[0]},{y[1]},{y[2]}]"
+
+                # Add note if this stronghold has one
+                if i in path_notes:
+                    export_text += f'"{path_notes[i]}"'
+
+                export_text += "\n"
 
         # Copy to clipboard
         self.clipboard_clear()

@@ -86,5 +86,5 @@ python -m pip install pyinstaller
 
 ### Build with PowerShell:
 `
-python -m PyInstaller --onefile --windowed --icon=icon.ico --collect-all ortools --name CrayonAllPortals_v1_2 --add-data "simple_rings.png;." CrayonAllPortals.py
+python -m PyInstaller --onefile --windowed --icon=icon.ico --collect-all ortools --name CrayonAllPortals_v1_3 --add-data "simple_rings.png;." CrayonAllPortals.py
 `
