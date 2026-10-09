@@ -21,6 +21,8 @@ WORLD_MIN = -24320
 WORLD_MAX = 24320
 WORLD_RANGE = WORLD_MAX - WORLD_MIN
 
+ADVANCED_PATHING = False
+
 def resource_path(relative):
     if hasattr(sys, "_MEIPASS"):
         return os.path.join(sys._MEIPASS, relative)
@@ -46,6 +48,7 @@ class App(ctk.CTk):
         # Stronghold variables
         self.stronghold_objects = []
         self.num_of_players = 1
+        self.num_of_paths = 1
         self.player_paths = [[[0, ""]]]
 
         # Configure weight so scroll frames expand properly
@@ -167,7 +170,7 @@ class App(ctk.CTk):
         frame.grid(row=0, column=0, pady=5, padx=5, sticky="nsw")
 
         # Player Id
-        ctk.CTkLabel(frame, text=f"Path 1 (0)", font=("Arial", 18), text_color=self.colors[0]).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        ctk.CTkLabel(frame, text=f"Solo Path (0)", font=("Arial", 18), text_color=self.colors[0]).grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
         # Textbox for Stronghold Ids
         textbox = ctk.CTkTextbox(frame, font=("Arial", 18))
@@ -185,43 +188,37 @@ class App(ctk.CTk):
         except:
             CTkMessagebox.messagebox(title="Invalid number of players", text="Number of players must be\ngreater than 0 and less than 15.", sound='off')
             return
-        
 
-        # Set Num of Players in object
+        # Players share paths: 2 players per spawn -> spawn loop
         self.num_of_players = num_players
+        self.num_of_paths = (num_players + 1) // 2
 
-        current_players = len(self.scrollable_window.winfo_children())
+        current_paths = len(self.scrollable_window.winfo_children())
 
-        # Destroy widgets and Pop extra players
-        if self.num_of_players < current_players:
-            # Destroy extra widgets
-            for widget in self.scrollable_window.winfo_children()[self.num_of_players:]:
+        # Destroy widgets and pop extra paths
+        if self.num_of_paths < current_paths:
+            for widget in self.scrollable_window.winfo_children()[self.num_of_paths:]:
                 widget.destroy()
 
-            # Remove extra player paths
-            while len(self.player_paths) > self.num_of_players:
-                self.player_paths.pop(self.num_of_players)
+            while len(self.player_paths) > self.num_of_paths:
+                self.player_paths.pop(self.num_of_paths)
 
-
-
-        # Generate frames for new players if needed
-        for i in range(current_players, self.num_of_players):
-            # Create a player path in index
-            self.player_paths.append([[0, f"{self.colors[i]}"]])
+        # Generate frames for new paths if needed
+        for i in range(current_paths, self.num_of_paths):
+            self.player_paths.append([[i, f"{self.colors[i]}"]])
 
             frame = ctk.CTkFrame(self.scrollable_window)
             frame.grid(row=0, column=i, pady=5, padx=5, sticky="nsw")
 
-            # Player Id
             ctk.CTkLabel(frame, text=f"Path {i+1} (0)", font=("Arial", 18), text_color=self.colors[i]).grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
-            # Textbox for Stronghold Ids
             textbox = ctk.CTkTextbox(frame, font=("Arial", 18))
-            textbox.grid(row=3, column=0, padx=5, pady=5, sticky="nesw")
+            textbox.grid(row=1, column=0, padx=5, pady=5, sticky="nesw")
             textbox.bind("<KeyRelease>", lambda event, idx=i: self.update_stronghold_ids(idx))
 
         # Update Everything
         self.update_textbox()
+        self.update_path_labels()
         self.draw_paths_on_canvas()
 
 
@@ -245,6 +242,8 @@ class App(ctk.CTk):
 
     def draw_paths_on_canvas(self):
     
+
+
         # Delete previous canvas items if any
         if hasattr(self, "canvas_items"):
             for item in self.canvas_items:
@@ -255,39 +254,64 @@ class App(ctk.CTk):
         
         self.canvas_items = []
 
-        # Use the square image size
         side = self.image_size
-
-        # Offsets for centering
         offset_x = (self.canvas.winfo_width() - side) // 2
         offset_y = (self.canvas.winfo_height() - side) // 2
 
-        # Iterate through each player's path
+        # Spawn (0, 0) on the canvas
+        origin_x = int((0 - WORLD_MIN) / WORLD_RANGE * side) + offset_x
+        origin_y = int((0 - WORLD_MIN) / WORLD_RANGE * side) + offset_y
+
         for idx, player_path in enumerate(self.player_paths):
 
+            stops = player_path[1:]
+            if not stops:
+                continue
+
             color = self.colors[idx % len(self.colors)]
-            prev_x, prev_y = None, None
-            
-            for point in player_path[1:]:
+            prev_x, prev_y = origin_x, origin_y
+
+            for point in stops:
                 x, y = point[1], point[2]
 
-                # Map world coordinates to canvas coordinates
                 img_x = int((x - WORLD_MIN) / WORLD_RANGE * side) + offset_x
                 img_y = int((y - WORLD_MIN) / WORLD_RANGE * side) + offset_y
 
-                # Draw line from previous point
-                if prev_x is not None and prev_y is not None:
-                    line = self.canvas.create_line(prev_x, prev_y, img_x, img_y, fill=color, width=4)
-                    self.canvas_items.append(line)
+                line = self.canvas.create_line(prev_x, prev_y, img_x, img_y, fill=color, width=4)
+                self.canvas_items.append(line)
 
                 prev_x, prev_y = img_x, img_y
 
+            # Close the loop back at spawn
+            if not self.is_solo_path(idx):
+                line = self.canvas.create_line(prev_x, prev_y, origin_x, origin_y, fill=color, width=4)
+                self.canvas_items.append(line)
 
         # Redraw canvas markers
         for sh in self.stronghold_objects:
             sh.draw_on_canvas()
 
     #==========================================================================================
+
+    def is_solo_path(self, idx):
+        # With an odd player count the last path belongs to the unpaired player
+        return self.num_of_players % 2 == 1 and idx == self.num_of_paths - 1
+
+    def update_path_labels(self):
+        frames = self.scrollable_window.winfo_children()
+        
+        for idx, path in enumerate(self.player_paths):
+            label = frames[idx].winfo_children()[0]
+            text = f"Path {idx+1} ({len(path) - 1})"
+
+            # With an odd player count the last path belongs to the unpaired player
+            if self.is_solo_path(idx):
+                text = f"Solo Path ({len(path) - 1})"
+            else:
+                text = f"Shared Path {idx+1} ({len(path) - 1})"
+
+
+            label.configure(text=text)
 
     def generate_path(self):
         valid_strongholds = []
@@ -297,94 +321,85 @@ class App(ctk.CTk):
             if sh.number not in STRONGHOLDS_RING_START:
                 valid_strongholds.append([sh.number, sh.x, sh.z])
 
-        # Compute optimal path
-        player_routes = solve_player_paths(strongholds=valid_strongholds, num_players=self.num_of_players, computation_time=60)
+        # Compute optimal paths (one per spawn -> spawn loop)
+        routes = solve_player_paths(strongholds=valid_strongholds, num_players=self.num_of_players, computation_time=60, advanced_pathing=ADVANCED_PATHING)
 
-        # Reconstruct player paths
+        # Reconstruct paths
         new_paths = []
-        for i in range(self.num_of_players):
-            player_header = [i, f"{self.colors[i]}"]
-            new_paths.append([player_header] + player_routes[i])
+        for i in range(self.num_of_paths):
+            header = [i, f"{self.colors[i]}"]
+            new_paths.append([header] + routes[i])
 
         self.player_paths = new_paths
 
-        # Update textboxes
         self.update_textbox()
-
-        # Update counts in labels
-        for i in range(self.num_of_players):
-            count_label = self.scrollable_window.winfo_children()[i].winfo_children()[0]
-            count_label.configure(text=f"Path {i} ({len(new_paths[i]) - 1})")
-
-        # Update all sh ids
-        for i in range(len(self.player_paths)):
-            self.update_stronghold_ids(i)
-
-        # Finally redraw paths
+        self.update_path_labels()
         self.draw_paths_on_canvas()
-
     #==========================================================================================
 
     def copy_paths_to_clipboard(self):
 
         export_text = "All Portals Paths\n"
+        spawn = [-1, 0, 0]
 
-        for path in self.player_paths:
+        for path_idx, path in enumerate(self.player_paths):
             total_distance = 0
-
-            # Notes for individual strongholds
             path_notes = {}
 
-            # Calculate distance between consecutive portals
-            for i in range(1, len(path) - 1):
+            stops = path[1:]
+            route = [spawn] + stops
+            if not self.is_solo_path(path_idx):
+                route.append(spawn)
+            has_return = not self.is_solo_path(path_idx)
 
-                current = path[i]
-                next_portal = path[i + 1]
+            for k in range(len(route) - 1):
+                current = route[k]
+                next_portal = route[k + 1]
+                is_return = has_return and (k == len(route) - 2)
 
-                # From current stronghold to next stronghold
-                distance_from_stronghold = math.hypot(current[1] - next_portal[1],  current[2] - next_portal[2])
+                distance_from_stronghold = math.hypot(current[1] - next_portal[1], current[2] - next_portal[2])
 
-                # From Nether origin (0, 0) to next stronghold
-                distance_from_origin = math.hypot(next_portal[1], next_portal[2])
+                if not ADVANCED_PATHING:
+                    total_distance += distance_from_stronghold
+                    continue
 
-                # From previous stronghold to next stronghold
-                if i > 1:
-                    previous = path[i - 1]
+                # Advanced: the final reset back to spawn is free
+                if is_return:
+                    continue
+
+                # From spawn (not applicable when already standing at spawn)
+                distance_from_origin = math.hypot(next_portal[1], next_portal[2]) if k > 0 else float("inf")
+
+                # From previous stronghold (needs a stronghold before current)
+                if k >= 2:
+                    previous = route[k - 1]
                     distance_from_previous = math.hypot(previous[1] - next_portal[1], previous[2] - next_portal[2])
                 else:
                     distance_from_previous = float("inf")
 
-                # Find the shortest option
-                distances = {"origin": distance_from_origin, "previous": distance_from_previous, "stronghold": distance_from_stronghold}
+                distances = {"stronghold": distance_from_stronghold, "origin": distance_from_origin, "previous": distance_from_previous}
                 shortest = min(distances, key=distances.get)
 
-                if shortest == "stronghold":
-                    total_distance += distance_from_stronghold
+                total_distance += distances[shortest]
 
-                elif shortest == "origin":
-                    total_distance += distance_from_origin
-                    path_notes[i] = f"DO NOT PLACE BED! {round((distance_from_stronghold - distance_from_origin)/8)} nether blocks faster via SPAWN."
-
+                if shortest == "origin":
+                    path_notes[k - 1] = f"DO NOT PLACE BED! {round((distance_from_stronghold - distance_from_origin)/8)} nether blocks faster via SPAWN."
                 elif shortest == "previous":
-                    total_distance += distance_from_previous
-                    path_notes[i] = f"KEEP CURRENT BED! {round((distance_from_stronghold - distance_from_previous)/8)} nether blocks faster via CURRENT bed."
+                    path_notes[k - 1] = f"KEEP CURRENT BED! {round((distance_from_stronghold - distance_from_previous)/8)} nether blocks faster via CURRENT bed."
 
             # Divide by 8 for Nether coordinates
             total_distance = round(total_distance / 8)
 
             export_text += f'\nPath {path[0][0] + 1} = {total_distance} Nether Blocks\n'
 
-            for i, y in enumerate(path[1:], start=1):
-                # [stronghold_id, X_coordinate, Z_coordinate]
+            for i, y in enumerate(stops):
                 export_text += f"[{y[0]},{y[1]},{y[2]}]"
 
-                # Add note if this stronghold has one
                 if i in path_notes:
                     export_text += f'"{path_notes[i]}"'
 
                 export_text += "\n"
 
-        # Copy to clipboard
         self.clipboard_clear()
         self.clipboard_append(export_text)
 
@@ -392,11 +407,8 @@ class App(ctk.CTk):
 
     #==========================================================================================
 
-    def update_stronghold_ids(self, player_index):
+    def update_stronghold_ids(self, player_index):  # player_index is now a path index
 
-        label_with_count = self.scrollable_window.winfo_children()[player_index].winfo_children()[0]
-
-        # Get textbox for this player
         textbox = self.scrollable_window.winfo_children()[player_index].winfo_children()[1]
 
         # Parse Text
@@ -404,35 +416,27 @@ class App(ctk.CTk):
         text = text.replace(" ", "")
         raw_ids = [item for item in text.split(",") if item]
 
-        # Convert to int of stronghold ids
         try:
             stronghold_ids = [int(x) for x in raw_ids]
         except ValueError:
             print("Failed to Parse Stronghold Ids!")
-        
-        new_path = [[player_index, f"{self.colors[player_index]}"]] 
+            return  # previously fell through with stronghold_ids undefined
 
-        for i, stronghold_id in enumerate(stronghold_ids):
+        new_path = [[player_index, f"{self.colors[player_index]}"]]
 
-            # Look up SH object from stronghold_objects
+        for stronghold_id in stronghold_ids:
             sh = next((sh for sh in self.stronghold_objects if sh.number == stronghold_id), None)
 
             if sh is None:
                 print(f"Stronghold {stronghold_id} not found!")
                 continue
 
-            # Use real coordinates from object
             new_path.append([stronghold_id, sh.x, sh.z])
 
-        # Save back into main structure
         self.player_paths[player_index] = new_path
 
-        label_with_count.configure(text=f"Path {player_index+1} ({len(stronghold_ids)})")
-
-        # Update Everything
-        #self.update_textbox()
+        self.update_path_labels()
         self.draw_paths_on_canvas()
-
 
     #==========================================================================================
 
