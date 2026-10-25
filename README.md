@@ -21,9 +21,11 @@ Here you can:
 - Set number of players to generate paths for.
 - Set how long the solver may spend generating paths with "Time (s)" (default 60, anywhere from 1 to 3600). More time can find shorter routes for multiple players.
 - Turn the path optimisers on or off (see below).
-- Generate the paths, which is almost instant for 1 player but uses the full time for multiple players (or with "Respawn at previous bed" on). While it runs the window stays usable: the map draws the best routes found so far, and a panel over the path boxes shows the time left, what the solver is doing, how many better routes it has found (and how long ago the last one was), the total travel, how much shorter it is than the first solution, and the strongholds and nether blocks of each path. Cancel stops it and keeps your previous paths. If "last improvement" keeps climbing, more time probably won't help; if it keeps improving right up to the end, try a longer time.
+- Generate the paths, which is almost instant for 1 player but uses the full time for multiple players (or with "Respawn at previous bed" on). While it runs the window stays usable: the map draws the best routes found so far, and a panel over the path boxes shows the time left, what the solver is doing, how many better routes it has found (and how long ago the last one was), the total travel, how much shorter it is than the first solution, and the strongholds and nether blocks of each path. Stop ends it early and keeps the best paths found so far (or your previous paths if it hadn't found any yet). If "last improvement" keeps climbing, more time probably won't help; if it keeps improving right up to the end, try a longer time.
 - Press Enter in a ring's X/Z box or the Players box instead of clicking SET.
 - "Reset" (click it twice to confirm) clears the rings, players, settings and paths back to a fresh start.
+- Name each player in their path's box. Names appear in the NavAssist headers (e.g. `Path 1 - Crayon & Noyarc`).
+- Each path has its own "Copy" button that copies just that path, so every player can paste only their own strongholds into NavAssist.
 - "Copy for NavAssist" which copies all the pathing information for [CrayonNavAssist](https://github.com/CommonCrayon/CrayonAllPortalsJava).
 
 ### Path Optimisers
@@ -44,7 +46,7 @@ A weight is how fast that player is compared to the others: a player with weight
 
 
 ### Sessions
-Everything you enter (ring locations, players, weights, time, optimisers and paths) is saved as you go and loaded the next time you open the app, so a crash or restart mid-run doesn't lose anything. The session is stored in `%APPDATA%\CrayonAllPortals\session.json`; delete that file to start fresh.
+Everything you enter (ring locations, players, names, weights, time, optimisers and paths) is saved as you go and loaded the next time you open the app, so a crash or restart mid-run doesn't lose anything. The session is stored in `%APPDATA%\CrayonAllPortals\session.json`; delete that file to start fresh.
 
 
 

@@ -71,6 +71,7 @@ class App(ctk.CTk):
         # Path widgets ({"frame", "label", "textbox"}) and one weight per player
         self.path_widgets = []
         self.weight_vars = [ctk.StringVar(value=str(DEFAULT_PLAYER_WEIGHT))]
+        self.name_vars = [ctk.StringVar(value=self.default_player_name(0))]
 
         # Path optimisers
         self.spawn_reset_var = ctk.BooleanVar(value=False)
@@ -252,7 +253,8 @@ class App(ctk.CTk):
         self.progress_stats = ctk.CTkLabel(status_frame, text="", font=("Arial", 14), justify="left")
         self.progress_stats.grid(row=3, column=0, sticky="w", pady=(4, 8))
 
-        ctk.CTkButton(status_frame, text="Cancel", width=110, font=("Arial", 16), fg_color="#B04A4A", hover_color="#8E3B3B", command=self.cancel_generation).grid(row=4, column=0, sticky="w")
+        # Stop early and keep the best paths found so far
+        ctk.CTkButton(status_frame, text="Stop", width=110, font=("Arial", 16), fg_color="#B04A4A", hover_color="#8E3B3B", command=self.stop_generation).grid(row=4, column=0, sticky="w")
 
         # Per path: strongholds and nether blocks of the best solution so far
         self.progress_table = ctk.CTkFrame(self.progress_overlay, fg_color="transparent")
@@ -304,18 +306,27 @@ class App(ctk.CTk):
             frame = ctk.CTkFrame(self.scrollable_window)
             frame.grid(row=0, column=idx, pady=5, padx=5, sticky="nsw")
 
-            # Path label
-            label = ctk.CTkLabel(frame, text=f"Path {idx+1} (0)", font=("Arial", 18), text_color=self.colors[idx])
-            label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+            # Path label + copy button for just this path
+            header_frame = ctk.CTkFrame(frame, fg_color="transparent")
+            header_frame.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+            header_frame.grid_columnconfigure(0, weight=1)
 
-            # Player weights (how fast each player clears strongholds)
-            weights_frame = ctk.CTkFrame(frame, fg_color="transparent")
-            weights_frame.grid(row=1, column=0, padx=5, pady=(0, 5), sticky="w")
+            label = ctk.CTkLabel(header_frame, text=f"Path {idx+1} (0)", font=("Arial", 18), text_color=self.colors[idx])
+            label.grid(row=0, column=0, sticky="w")
 
-            ctk.CTkLabel(weights_frame, text="Weight", font=("Arial", 16)).grid(row=0, column=0, padx=(0, 6))
-            for col, player in enumerate(players):
-                ctk.CTkLabel(weights_frame, text=f"P{player+1}", font=("Arial", 16)).grid(row=0, column=1 + col*2, padx=(4, 2))
-                ctk.CTkEntry(weights_frame, textvariable=self.weight_vars[player], width=48, font=("Arial", 16)).grid(row=0, column=2 + col*2)
+            ctk.CTkButton(header_frame, text="Copy", width=56, font=("Arial", 14), command=lambda idx=idx: self.copy_path_to_clipboard(idx)).grid(row=0, column=1, sticky="e", padx=(8, 0))
+
+            # Player names and weights (how fast each player clears strongholds)
+            players_frame = ctk.CTkFrame(frame, fg_color="transparent")
+            players_frame.grid(row=1, column=0, padx=5, pady=(0, 5), sticky="w")
+
+            ctk.CTkLabel(players_frame, text="Player", font=("Arial", 13)).grid(row=0, column=0, sticky="w")
+            ctk.CTkLabel(players_frame, text="Weight", font=("Arial", 13)).grid(row=0, column=1, sticky="w", padx=(6, 0))
+            for row, player in enumerate(players, start=1):
+                name_entry = ctk.CTkEntry(players_frame, textvariable=self.name_vars[player], width=130, font=("Arial", 16))
+                name_entry.grid(row=row, column=0, pady=2)
+                name_entry.bind("<FocusOut>", lambda event: self.save_session())
+                ctk.CTkEntry(players_frame, textvariable=self.weight_vars[player], width=52, font=("Arial", 16)).grid(row=row, column=1, padx=(6, 0), pady=2)
 
             # Textbox for Stronghold Ids
             textbox = ctk.CTkTextbox(frame, font=("Arial", 18))
@@ -381,8 +392,19 @@ class App(ctk.CTk):
         self.player_paths = [[[0, f"{self.colors[0]}"]]]
         del self.weight_vars[1:]
         self.weight_vars[0].set(str(DEFAULT_PLAYER_WEIGHT))
+        del self.name_vars[1:]
+        self.name_vars[0].set(self.default_player_name(0))
         self.num_players_var.set("1")
         self.set_player_number()  # rebuilds the path boxes, redraws and saves the session
+
+    @staticmethod
+    def default_player_name(player):
+        return f"Player {player+1}"
+
+    def player_name(self, player):
+        # Brackets and quotes would confuse NavAssist's parser, so they're dropped
+        name = "".join(ch for ch in self.name_vars[player].get() if ch not in '[]"').strip()
+        return name or self.default_player_name(player)
 
     def set_player_number(self):
         # Get Number of players
@@ -398,10 +420,13 @@ class App(ctk.CTk):
         self.num_of_players = num_players
         self.num_of_paths = (num_players + 1) // 2
 
-        # Keep existing weights, new players start at the default
+        # Keep existing names and weights, new players start at the defaults
         del self.weight_vars[num_players:]
+        del self.name_vars[num_players:]
         while len(self.weight_vars) < num_players:
             self.weight_vars.append(ctk.StringVar(value=str(DEFAULT_PLAYER_WEIGHT)))
+        while len(self.name_vars) < num_players:
+            self.name_vars.append(ctk.StringVar(value=self.default_player_name(len(self.name_vars))))
 
         # Pop extra paths / add empty new ones
         del self.player_paths[self.num_of_paths:]
@@ -654,14 +679,30 @@ class App(ctk.CTk):
 
             self.progress_rows.append((count_label, distance_label))
 
-    def cancel_generation(self):
+    def stop_generation(self):
+        # Stop the solver now and use the best paths it has found so far
+        # (if it hasn't found any yet, the previous paths stay)
         job = self.generation
         if job is None:
             return
 
+        # Pick up any progress that arrived since the last poll
+        finished = self.read_solver_messages(job, wait=False)
+
         self.generation = None
         job["process"].terminate()
+
+        if finished and finished[0] == "done":
+            best_routes = finished[1]
+        elif self.progress_info and self.progress_info["routes"] is not None:
+            best_routes = self.progress_info["routes"]
+        else:
+            best_routes = None
+
         self.show_generating(False)
+
+        if best_routes is not None:
+            self.apply_routes(best_routes)
 
     def show_generating(self, generating):
         # Lock controls that would change the inputs and show/hide the progress overlay
@@ -718,6 +759,7 @@ class App(ctk.CTk):
             "rings": rings,
             "players": self.num_of_players,
             "weights": [var.get() for var in self.weight_vars],
+            "names": [var.get() for var in self.name_vars],
             "time": self.computation_time_var.get(),
             "spawn_reset": bool(self.spawn_reset_var.get()),
             "previous_bed": bool(self.previous_bed_var.get()),
@@ -757,6 +799,8 @@ class App(ctk.CTk):
             self.set_player_number()
             for var, weight in zip(self.weight_vars, session.get("weights", [])):
                 var.set(str(weight))
+            for var, name in zip(self.name_vars, session.get("names", [])):
+                var.set(str(name))
 
             # Settings
             self.computation_time_var.set(str(session.get("time", DEFAULT_COMPUTATION_TIME)))
@@ -786,49 +830,59 @@ class App(ctk.CTk):
 
     #==========================================================================================
 
-    def copy_paths_to_clipboard(self):
-
-        export_text = "All Portals Paths\n"
+    def path_export_text(self, path_idx):
+        # One path for NavAssist: a header naming its players, then [id,x,z]"note" per stronghold
         spawn_reset = self.spawn_reset_var.get()
         previous_bed = self.previous_bed_var.get()
 
-        for path_idx, path in enumerate(self.player_paths):
-            path_notes = {}
+        path = self.player_paths[path_idx]
+        path_notes = {}
 
-            stops = path[1:]
-            is_shared = not self.is_solo_path(path_idx)
+        stops = path[1:]
+        is_shared = not self.is_solo_path(path_idx)
 
-            # Pick where to respawn before each leg using the enabled optimisers
-            total_distance, legs = plan_route(stops, closed=is_shared, spawn_reset=spawn_reset, previous_bed=previous_bed)
+        # Pick where to respawn before each leg using the enabled optimisers
+        _, legs = plan_route(stops, closed=is_shared, spawn_reset=spawn_reset, previous_bed=previous_bed)
 
-            for i, leg in enumerate(legs):
-                # The return to spawn on a shared path isn't a leg anyone follows a note for
-                if leg is None or i == len(stops) - 1:
-                    continue
+        for i, leg in enumerate(legs):
+            # The return to spawn on a shared path isn't a leg anyone follows a note for
+            if leg is None or i == len(stops) - 1:
+                continue
 
-                saving = round(leg["saving"] / NETHER_SCALE)
+            saving = round(leg["saving"] / NETHER_SCALE)
 
-                if leg["option"] == "spawn":
-                    path_notes[i] = f"DO NOT PLACE BED! {saving} nether blocks faster via SPAWN."
-                elif leg["option"] == "keep":
-                    if saving > 0:
-                        path_notes[i] = f"KEEP CURRENT BED! {saving} nether blocks faster via CURRENT bed."
-                    else:
-                        # Costs a little on this leg but pays off on a later one
-                        path_notes[i] = "KEEP CURRENT BED! Faster overall via CURRENT bed."
+            if leg["option"] == "spawn":
+                path_notes[i] = f"DO NOT PLACE BED! {saving} nether blocks faster via SPAWN."
+            elif leg["option"] == "keep":
+                if saving > 0:
+                    path_notes[i] = f"KEEP CURRENT BED! {saving} nether blocks faster via CURRENT bed."
+                else:
+                    # Costs a little on this leg but pays off on a later one
+                    path_notes[i] = "KEEP CURRENT BED! Faster overall via CURRENT bed."
 
-            # Divide by 8 for Nether coordinates
-            total_distance = round(total_distance / NETHER_SCALE)
+        players = " & ".join(self.player_name(p) for p in group_players(self.num_of_players)[path_idx])
+        text = f'Path {path_idx + 1} - {players}\n'
 
-            export_text += f'\nPath {path[0][0] + 1} = {total_distance} Nether Blocks\n'
+        for i, y in enumerate(stops):
+            text += f"[{y[0]},{y[1]},{y[2]}]"
 
-            for i, y in enumerate(stops):
-                export_text += f"[{y[0]},{y[1]},{y[2]}]"
+            if i in path_notes:
+                text += f'"{path_notes[i]}"'
 
-                if i in path_notes:
-                    export_text += f'"{path_notes[i]}"'
+            text += "\n"
 
-                export_text += "\n"
+        return text
+
+    def copy_path_to_clipboard(self, path_idx):
+        # Just one path, ready to paste into that player's NavAssist
+        self.clipboard_clear()
+        self.clipboard_append(self.path_export_text(path_idx))
+        print(f"Copied path {path_idx + 1} to clipboard!")
+
+    def copy_paths_to_clipboard(self):
+        export_text = "All Portals Paths\n"
+        for path_idx in range(len(self.player_paths)):
+            export_text += "\n" + self.path_export_text(path_idx)
 
         self.clipboard_clear()
         self.clipboard_append(export_text)
