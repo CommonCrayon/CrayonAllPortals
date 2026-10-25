@@ -14,7 +14,7 @@ Here you enter locations of the starter room for each stronghold in a ring to ge
 Each ring set has validation to make sure the stronghold is within the bounds of the ring. The optimal blind coordinate is on the top right of the widget.
 
 ### Overview Canvas
-This showcases the stronghold locations and once generated the paths and their status. It's not ultimately necessary but good visual reference.
+This showcases the stronghold locations and once generated the paths and their status. It's not ultimately necessary but good visual reference. Each stronghold dot takes the colour of the path it's on (pink means not on a path yet, green is the ring's measured stronghold), and an arrow from spawn points at each path's first stronghold so you can see which way the list runs.
 
 ## Player Manager Menu
 Here you can:

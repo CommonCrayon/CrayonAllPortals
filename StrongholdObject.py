@@ -43,23 +43,34 @@ class StrongholdObject:
             except Exception:
                 pass
 
-        # Change color depending on ring stronghold or not.
+        # Colour: green for each ring's measured stronghold, the path's colour once it's on a path, pink otherwise
+        path_color = getattr(self.app, "stronghold_colors", {}).get(self.number)
         if self.number in STRONGHOLDS_RING_START:
             dot_color  = "#43A047"
+        elif path_color:
+            dot_color  = path_color
         else:
             dot_color  = "#DC8D8C"
 
-        font_size  = 18
-        dot_radius = 18
-        
+        # Size scales with the map so outer-ring dots don't overlap
+        dot_radius = self.app.dot_radius()
+        font_size  = dot_radius if self.number < 100 else round(dot_radius * 0.8)  # 3 digits need a smaller font to fit
 
-        # Draw new dot and text
-        dot = self.app.canvas.create_oval(img_x-dot_radius, img_y-dot_radius, img_x+dot_radius, img_y+dot_radius, fill=dot_color, outline="")
-        text = self.app.canvas.create_text(img_x, img_y, text=str(self.number), fill="black", font=("Arial", font_size, 'bold'))
+        # Draw new dot and text (dark outline keeps light colours visible on the rings)
+        dot = self.app.canvas.create_oval(img_x-dot_radius, img_y-dot_radius, img_x+dot_radius, img_y+dot_radius, fill=dot_color, outline="#1E1E1E", width=2)
+        text = self.app.canvas.create_text(img_x, img_y, text=str(self.number), fill=self.text_color(dot_color), font=("Arial", font_size, 'bold'))
 
         self.canvas_items = [dot, text]
 
 
+
+    def text_color(self, dot_color):
+        # Black text on light dots, white on dark ones
+        try:
+            r, g, b = self.app.canvas.winfo_rgb(dot_color)
+        except Exception:
+            return "black"
+        return "black" if (0.299 * r + 0.587 * g + 0.114 * b) / 65535 > 0.5 else "white"
 
     # Clean up everything for this stronghold
     def destroy(self):

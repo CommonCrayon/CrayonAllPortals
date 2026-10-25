@@ -21,6 +21,11 @@ WORLD_MIN = -24320
 WORLD_MAX = 24320
 WORLD_RANGE = WORLD_MAX - WORLD_MIN
 
+# Path boxes: sized so four fit across the panel
+PATH_BOX_WIDTH = 138
+PATH_NAME_WIDTH = 84
+PATH_WEIGHT_WIDTH = 38
+
 # Seconds the solver may spend generating paths
 DEFAULT_COMPUTATION_TIME = 60
 MIN_COMPUTATION_TIME = 1
@@ -206,7 +211,7 @@ class App(ctk.CTk):
         ctk.CTkCheckBox(player_manager_menu_frame, text="Respawn at previous bed", font=("Arial", 16), variable=self.previous_bed_var, onvalue=True, offvalue=False, command=self.save_session).grid(row=4, column=0, columnspan=3, sticky="w", pady=(2, 5), padx=10)
 
         # Generate a path and assign strongholds to players
-        self.generate_button = ctk.CTkButton(player_manager_menu_frame, text="Generate Paths", font=("Arial", 18), command=self.generate_path)
+        self.generate_button = ctk.CTkButton(player_manager_menu_frame, text="Generate Paths", height=34, font=("Arial", 18, "bold"), command=self.generate_path)
         self.generate_button.grid(row=5, column=0, columnspan=3, sticky="nesw", pady=5, padx=10)
         self.lockable_widgets.append(self.generate_button)
 
@@ -230,6 +235,7 @@ class App(ctk.CTk):
 
         self.scrollable_window = ctk.CTkScrollableFrame(scrollable_window_frame, orientation="horizontal")
         self.scrollable_window.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+        scrollable_window_frame.bind("<Configure>", lambda event: self.after(50, self.fit_path_boxes))
 
         #======================================================================================================================
         # Progress panel shown over the path boxes while paths generate (the map shows the best routes live)
@@ -308,32 +314,54 @@ class App(ctk.CTk):
 
             # Path label + copy button for just this path
             header_frame = ctk.CTkFrame(frame, fg_color="transparent")
-            header_frame.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+            header_frame.grid(row=0, column=0, padx=5, pady=(5, 2), sticky="ew")
             header_frame.grid_columnconfigure(0, weight=1)
 
-            label = ctk.CTkLabel(header_frame, text=f"Path {idx+1} (0)", font=("Arial", 18), text_color=self.colors[idx])
+            label = ctk.CTkLabel(header_frame, text=f"Path {idx+1} (0)", font=("Arial", 16, "bold"), text_color=self.colors[idx])
             label.grid(row=0, column=0, sticky="w")
 
-            ctk.CTkButton(header_frame, text="Copy", width=56, font=("Arial", 14), command=lambda idx=idx: self.copy_path_to_clipboard(idx)).grid(row=0, column=1, sticky="e", padx=(8, 0))
+            ctk.CTkButton(header_frame, text="Copy", width=48, height=24, font=("Arial", 13), command=lambda idx=idx: self.copy_path_to_clipboard(idx)).grid(row=0, column=1, sticky="e", padx=(6, 0))
 
-            # Player names and weights (how fast each player clears strongholds)
+            # Player names and weights: "name  x weight"
             players_frame = ctk.CTkFrame(frame, fg_color="transparent")
-            players_frame.grid(row=1, column=0, padx=5, pady=(0, 5), sticky="w")
+            players_frame.grid(row=1, column=0, padx=5, pady=(0, 2), sticky="w")
 
-            ctk.CTkLabel(players_frame, text="Player", font=("Arial", 13)).grid(row=0, column=0, sticky="w")
-            ctk.CTkLabel(players_frame, text="Weight", font=("Arial", 13)).grid(row=0, column=1, sticky="w", padx=(6, 0))
-            for row, player in enumerate(players, start=1):
-                name_entry = ctk.CTkEntry(players_frame, textvariable=self.name_vars[player], width=130, font=("Arial", 16))
+            for row, player in enumerate(players):
+                name_entry = ctk.CTkEntry(players_frame, textvariable=self.name_vars[player], width=PATH_NAME_WIDTH, height=26, font=("Arial", 14))
                 name_entry.grid(row=row, column=0, pady=2)
                 name_entry.bind("<FocusOut>", lambda event: self.save_session())
-                ctk.CTkEntry(players_frame, textvariable=self.weight_vars[player], width=52, font=("Arial", 16)).grid(row=row, column=1, padx=(6, 0), pady=2)
+                ctk.CTkLabel(players_frame, text="×", width=14, font=("Arial", 14)).grid(row=row, column=1, padx=2)
+                ctk.CTkEntry(players_frame, textvariable=self.weight_vars[player], width=PATH_WEIGHT_WIDTH, height=26, font=("Arial", 14)).grid(row=row, column=2, pady=2)
 
-            # Textbox for Stronghold Ids
-            textbox = ctk.CTkTextbox(frame, font=("Arial", 18))
+            # Textbox for Stronghold Ids (its height is fitted to the panel by fit_path_boxes)
+            textbox = ctk.CTkTextbox(frame, width=PATH_BOX_WIDTH, height=80, font=("Arial", 16))
             textbox.grid(row=2, column=0, padx=5, pady=5, sticky="nesw")
             textbox.bind("<KeyRelease>", lambda event, idx=idx: self.update_stronghold_ids(idx))
 
             self.path_widgets.append({"frame": frame, "label": label, "textbox": textbox})
+
+        self.after(50, self.fit_path_boxes)
+
+    def fit_path_boxes(self):
+        # Let each stronghold list fill the height left in the panel instead of being cut off at the bottom
+        canvas = getattr(self.scrollable_window, "_parent_canvas", None)
+        if canvas is None or not self.path_widgets:
+            return
+
+        self.update_idletasks()
+        visible = canvas.winfo_height()
+        if visible <= 1:
+            return
+
+        try:
+            scaling = ctk.ScalingTracker.get_widget_scaling(self)
+        except Exception:
+            scaling = 1
+
+        for widgets in self.path_widgets:
+            top = widgets["frame"].winfo_y() + widgets["textbox"].winfo_y()
+            height = (visible - top) / scaling - 12  # textbox + frame padding below
+            widgets["textbox"].configure(height=max(60, int(height)))
 
     def read_player_weights(self):
         # Returns a weight per player, or None (after telling the user) if any are invalid
@@ -486,6 +514,9 @@ class App(ctk.CTk):
         # While generating, show the solver's best routes so far
         paths = self.preview_paths if self.preview_paths is not None else self.player_paths
 
+        # Stronghold dots take the colour of the path they're on
+        self.stronghold_colors = {}
+
         for idx, player_path in enumerate(paths):
 
             stops = player_path[1:]
@@ -495,13 +526,24 @@ class App(ctk.CTk):
             color = self.colors[idx % len(self.colors)]
             prev_x, prev_y = origin_x, origin_y
 
-            for point in stops:
+            for i, point in enumerate(stops):
                 x, y = point[1], point[2]
+                self.stronghold_colors[point[0]] = color
 
                 img_x = int((x - WORLD_MIN) / WORLD_RANGE * side) + offset_x
                 img_y = int((y - WORLD_MIN) / WORLD_RANGE * side) + offset_y
 
-                line = self.canvas.create_line(prev_x, prev_y, img_x, img_y, fill=color, width=4)
+                if i == 0:
+                    # Arrow from spawn to the first stronghold shows which end the path starts at
+                    end_x, end_y = img_x, img_y
+                    length = math.hypot(img_x - prev_x, img_y - prev_y)
+                    gap = self.dot_radius() + 2
+                    if length > gap:
+                        end_x = img_x - (img_x - prev_x) * gap / length
+                        end_y = img_y - (img_y - prev_y) * gap / length
+                    line = self.canvas.create_line(prev_x, prev_y, end_x, end_y, fill=color, width=4, arrow="last", arrowshape=(14, 18, 7))
+                else:
+                    line = self.canvas.create_line(prev_x, prev_y, img_x, img_y, fill=color, width=4)
                 self.canvas_items.append(line)
 
                 prev_x, prev_y = img_x, img_y
@@ -517,6 +559,10 @@ class App(ctk.CTk):
 
     #==========================================================================================
 
+    def dot_radius(self):
+        # Stronghold dots scale with the map so outer rings don't overlap
+        return max(10, round(self.image_size * 0.021))
+
     def is_solo_path(self, idx):
         # With an odd player count the last path belongs to the unpaired player
         return self.num_of_players % 2 == 1 and idx == self.num_of_paths - 1
@@ -524,14 +570,9 @@ class App(ctk.CTk):
     def update_path_labels(self):
         for idx, path in enumerate(self.player_paths):
             label = self.path_widgets[idx]["label"]
-            text = f"Path {idx+1} ({len(path) - 1})"
-
             # With an odd player count the last path belongs to the unpaired player
-            if self.is_solo_path(idx):
-                text = f"Solo Path ({len(path) - 1})"
-            else:
-                text = f"Shared Path {idx+1} ({len(path) - 1})"
-
+            name = "Solo" if self.is_solo_path(idx) else f"Path {idx+1}"
+            text = f"{name} ({len(path) - 1})"
 
             label.configure(text=text)
 
