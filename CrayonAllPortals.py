@@ -3,10 +3,10 @@ from  CustomTkinterMessagebox  import  *
 
 from PIL import Image, ImageTk
 import numpy as np
-import sys, os, math
+import sys, os, math, time, queue, json, multiprocessing
 
 from StrongholdObject import StrongholdObject
-from PathSolver import solve_player_paths
+from PathSolver import solve_in_background, plan_route, group_players, DEFAULT_PLAYER_WEIGHT, MIN_PLAYER_WEIGHT, MAX_PLAYER_WEIGHT, NETHER_SCALE
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -21,7 +21,10 @@ WORLD_MIN = -24320
 WORLD_MAX = 24320
 WORLD_RANGE = WORLD_MAX - WORLD_MIN
 
-ADVANCED_PATHING = False
+# Seconds the solver may spend generating paths
+DEFAULT_COMPUTATION_TIME = 60
+MIN_COMPUTATION_TIME = 1
+MAX_COMPUTATION_TIME = 3600
 
 def resource_path(relative):
     if hasattr(sys, "_MEIPASS"):
@@ -29,13 +32,27 @@ def resource_path(relative):
     return os.path.join(os.path.abspath("."), relative)
 
 img_path = resource_path("simple_rings.png")
+icon_path = resource_path("icon.ico")
+logo_path = resource_path("logo.png")
+
+# Version lives only in version.txt (also used by build.bat), e.g. "1_6"
+try:
+    with open(resource_path("version.txt"), encoding="utf-8") as version_file:
+        APP_VERSION = version_file.read().strip()
+except OSError:
+    APP_VERSION = "dev"
+
+# Last session (rings, players, settings, paths) is saved here and loaded on start
+SESSION_PATH = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "CrayonAllPortals", "session.json")
+
 
 
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("Crayon All Portals")
+        self.title(f"CrayonAllPortals v{APP_VERSION.replace('_', '.')}")
+        self.set_window_icon()
 
         # ctk.deactivate_automatic_dpi_awareness()
         # ctk.set_widget_scaling(1)  # widget dimensions and text size
@@ -50,6 +67,22 @@ class App(ctk.CTk):
         self.num_of_players = 1
         self.num_of_paths = 1
         self.player_paths = [[[0, ""]]]
+
+        # Path widgets ({"frame", "label", "textbox"}) and one weight per player
+        self.path_widgets = []
+        self.weight_vars = [ctk.StringVar(value=str(DEFAULT_PLAYER_WEIGHT))]
+
+        # Path optimisers
+        self.spawn_reset_var = ctk.BooleanVar(value=False)
+        self.previous_bed_var = ctk.BooleanVar(value=False)
+
+        # Background path generation ({"process", "queue", "start", "time"} while running)
+        self.generation = None
+        self.lockable_widgets = []  # disabled while paths generate
+        self.preview_paths = None   # best routes so far, drawn on the map while generating
+        self.progress_info = None   # latest progress snapshot from the solver
+        self.ring_vars = []         # (ring, x, z) StringVars per ring
+        self.loading_session = False
 
         # Configure weight so scroll frames expand properly
         # self.grid_columnconfigure(0, weight=1)
@@ -69,7 +102,12 @@ class App(ctk.CTk):
 
         sidebar.grid_columnconfigure(0, weight=1)
 
-        title = ctk.CTkLabel(sidebar, text="Stronghold Ring Locations", font=("Arial", 20))
+        # Title with the ender eye logo
+        self.logo_image = self.load_logo(size=32)
+        if self.logo_image:
+            title = ctk.CTkLabel(sidebar, text="  Stronghold Ring Locations", image=self.logo_image, compound="left", font=("Arial", 20))
+        else:
+            title = ctk.CTkLabel(sidebar, text="Stronghold Ring Locations", font=("Arial", 20))
         title.grid(row=0, column=0, padx=10, pady=10)
 
         # Make a entry box for all 8 rings
@@ -107,6 +145,12 @@ class App(ctk.CTk):
             ring_button = ctk.CTkButton(row_frame, text="SET", width=64, font=("Arial", 16, 'bold'), command=lambda ring=stronghold_ring_string, x=x_coordinate_string, z=z_coordinate_string: self.update_ring(ring, x, z))
             ring_button.grid(row=1, column=2, sticky="e", padx=5, pady=5)
 
+            # Enter in either box does the same as SET
+            for entry in (entry_x, entry_z):
+                entry.bind("<Return>", lambda event, button=ring_button: self.press_if_enabled(button))
+            self.lockable_widgets.append(ring_button)
+            self.ring_vars.append((stronghold_ring_string, x_coordinate_string, z_coordinate_string))
+
 
         #======================================================================================================================
         # Image
@@ -132,24 +176,47 @@ class App(ctk.CTk):
         #======================================================================================================================
         player_manager_menu_frame = ctk.CTkFrame(self)
         player_manager_menu_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
+        # Columns: label | entry | button, centred
         player_manager_menu_frame.grid_columnconfigure(0, weight=1)
-        player_manager_menu_frame.grid_columnconfigure(1, weight=1)
+        player_manager_menu_frame.grid_columnconfigure(2, weight=1)
 
-        ctk.CTkLabel(player_manager_menu_frame, text="Player Manager Menu", font=("Arial", 20)).grid(row=0, column=0, columnspan=2, sticky="new", pady=(10, 5))
+        ctk.CTkLabel(player_manager_menu_frame, text="Player Manager Menu", font=("Arial", 20)).grid(row=0, column=0, columnspan=3, sticky="new", pady=(10, 5))
 
         ctk.CTkLabel(player_manager_menu_frame, text="Players:", font=("Arial", 18)).grid(row=1, column=0, sticky="e", pady=5, padx=5)
         # Number of players entry box
-        self.num_players_entry = ctk.CTkEntry(player_manager_menu_frame, textvariable=ctk.StringVar(value="1"), font=("Arial", 18))
+        self.num_players_var = ctk.StringVar(value="1")
+        self.num_players_entry = ctk.CTkEntry(player_manager_menu_frame, textvariable=self.num_players_var, width=96, font=("Arial", 18))
         self.num_players_entry.grid(row=1, column=1, sticky="w", pady=5)
 
         # Number of players Button Set
-        ctk.CTkButton(player_manager_menu_frame, text="Set Players", font=("Arial", 18), command=self.set_player_number).grid(row=2, column=0, columnspan=2, sticky="nesw", pady=5, padx=10)
+        set_players_button = ctk.CTkButton(player_manager_menu_frame, text="SET", width=64, font=("Arial", 16, 'bold'), command=self.set_player_number)
+        set_players_button.grid(row=1, column=2, sticky="w", pady=5, padx=5)
+        self.num_players_entry.bind("<Return>", lambda event: self.press_if_enabled(set_players_button))
+        self.lockable_widgets.append(set_players_button)
+
+        # Computation time for generating paths
+        ctk.CTkLabel(player_manager_menu_frame, text="Time (s):", font=("Arial", 18)).grid(row=2, column=0, sticky="e", pady=5, padx=5)
+        self.computation_time_var = ctk.StringVar(value=str(DEFAULT_COMPUTATION_TIME))
+        self.computation_time_entry = ctk.CTkEntry(player_manager_menu_frame, textvariable=self.computation_time_var, width=96, font=("Arial", 18))
+        self.computation_time_entry.grid(row=2, column=1, sticky="w", pady=5)
+
+        # Path optimisers
+        ctk.CTkCheckBox(player_manager_menu_frame, text="Respawn at spawn", font=("Arial", 16), variable=self.spawn_reset_var, onvalue=True, offvalue=False, command=self.save_session).grid(row=3, column=0, columnspan=3, sticky="w", pady=(5, 2), padx=10)
+        ctk.CTkCheckBox(player_manager_menu_frame, text="Respawn at previous bed", font=("Arial", 16), variable=self.previous_bed_var, onvalue=True, offvalue=False, command=self.save_session).grid(row=4, column=0, columnspan=3, sticky="w", pady=(2, 5), padx=10)
 
         # Generate a path and assign strongholds to players
-        ctk.CTkButton(player_manager_menu_frame, text="Generate Paths (1 Min)", font=("Arial", 18), command=self.generate_path).grid(row=3, column=0, columnspan=2, sticky="nesw", pady=5, padx=10)
+        self.generate_button = ctk.CTkButton(player_manager_menu_frame, text="Generate Paths", font=("Arial", 18), command=self.generate_path)
+        self.generate_button.grid(row=5, column=0, columnspan=3, sticky="nesw", pady=5, padx=10)
+        self.lockable_widgets.append(self.generate_button)
 
         # Copy to Clipboard
-        ctk.CTkButton(player_manager_menu_frame, text="Copy for NavAssist", font=("Arial", 18), command=self.copy_paths_to_clipboard).grid(row=4, column=0, columnspan=2, sticky="nesw", pady=(5, 10), padx=10)
+        ctk.CTkButton(player_manager_menu_frame, text="Copy for NavAssist", font=("Arial", 18), command=self.copy_paths_to_clipboard).grid(row=6, column=0, columnspan=2, sticky="nesw", pady=(5, 10), padx=(10, 5))
+
+        # Reset everything (needs a second click to confirm)
+        self.reset_button = ctk.CTkButton(player_manager_menu_frame, text="Reset", width=80, font=("Arial", 18), fg_color="#B04A4A", hover_color="#8E3B3B", command=self.reset_clicked)
+        self.reset_button.grid(row=6, column=2, sticky="nesw", pady=(5, 10), padx=(5, 10))
+        self.lockable_widgets.append(self.reset_button)
+        self.reset_armed = None
 
         #======================================================================================================================
         # Scrollable Window for each player
@@ -164,20 +231,158 @@ class App(ctk.CTk):
         self.scrollable_window.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
         #======================================================================================================================
-        # Default Path 0 Frame
+        # Progress panel shown over the path boxes while paths generate (the map shows the best routes live)
         #======================================================================================================================
-        frame = ctk.CTkFrame(self.scrollable_window)
-        frame.grid(row=0, column=0, pady=5, padx=5, sticky="nsw")
+        self.progress_overlay = ctk.CTkFrame(scrollable_window_frame, corner_radius=8, border_width=2)
+        self.progress_overlay.grid_columnconfigure(1, weight=1)
 
-        # Player Id
-        ctk.CTkLabel(frame, text=f"Solo Path (0)", font=("Arial", 18), text_color=self.colors[0]).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        status_frame = ctk.CTkFrame(self.progress_overlay, fg_color="transparent")
+        status_frame.grid(row=0, column=0, sticky="nw", padx=(16, 8), pady=12)
 
-        # Textbox for Stronghold Ids
-        textbox = ctk.CTkTextbox(frame, font=("Arial", 18))
-        textbox.grid(row=1, column=0, padx=5, pady=5, sticky="nesw")
-        textbox.bind("<KeyRelease>", lambda event: self.update_stronghold_ids(0))
+        ctk.CTkLabel(status_frame, text="Generating Paths...", font=("Arial", 20)).grid(row=0, column=0, sticky="w")
+
+        self.progress_bar = ctk.CTkProgressBar(status_frame, width=260, height=12, mode="determinate")
+        self.progress_bar.grid(row=1, column=0, sticky="w", pady=(6, 4))
+
+        # "42 s left · Improving routes"
+        self.progress_label = ctk.CTkLabel(status_frame, text="", font=("Arial", 16))
+        self.progress_label.grid(row=2, column=0, sticky="w")
+
+        # Better routes found / total travel / improvement
+        self.progress_stats = ctk.CTkLabel(status_frame, text="", font=("Arial", 14), justify="left")
+        self.progress_stats.grid(row=3, column=0, sticky="w", pady=(4, 8))
+
+        ctk.CTkButton(status_frame, text="Cancel", width=110, font=("Arial", 16), fg_color="#B04A4A", hover_color="#8E3B3B", command=self.cancel_generation).grid(row=4, column=0, sticky="w")
+
+        # Per path: strongholds and nether blocks of the best solution so far
+        self.progress_table = ctk.CTkFrame(self.progress_overlay, fg_color="transparent")
+        self.progress_table.grid(row=0, column=1, sticky="nw", padx=(8, 16), pady=12)
+        self.progress_rows = []
+
+        # Default Solo Path frame
+        self.build_path_frames()
+        self.update_path_labels()
+
+        # Pick up where the last session left off, and save it again on close
+        self.load_session()
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
 
     #==========================================================================================
+
+    def set_window_icon(self):
+        # Ender eye in the title bar / taskbar (iconbitmap also stops CustomTkinter swapping in its own icon)
+        try:
+            if sys.platform == "win32":
+                self.iconbitmap(icon_path)
+            else:
+                self.icon_photo = ImageTk.PhotoImage(Image.open(logo_path))
+                self.iconphoto(True, self.icon_photo)
+        except Exception as error:
+            print(f"Could not set window icon: {error}")
+
+    def load_logo(self, size):
+        # Pixel art: pre-scale with nearest neighbour to the on-screen size so it stays crisp instead of blurring
+        try:
+            try:
+                scaling = ctk.ScalingTracker.get_widget_scaling(self)
+            except Exception:
+                scaling = 1
+            pixels = max(1, round(size * scaling))
+            logo = Image.open(logo_path).convert("RGBA").resize((pixels, pixels), Image.NEAREST)
+            return ctk.CTkImage(light_image=logo, dark_image=logo, size=(size, size))
+        except Exception as error:
+            print(f"Could not load logo: {error}")
+            return None
+
+    def build_path_frames(self):
+        # Rebuild one frame per path: label, player weights and stronghold ids
+        for widgets in self.path_widgets:
+            widgets["frame"].destroy()
+        self.path_widgets = []
+
+        for idx, players in enumerate(group_players(self.num_of_players)):
+            frame = ctk.CTkFrame(self.scrollable_window)
+            frame.grid(row=0, column=idx, pady=5, padx=5, sticky="nsw")
+
+            # Path label
+            label = ctk.CTkLabel(frame, text=f"Path {idx+1} (0)", font=("Arial", 18), text_color=self.colors[idx])
+            label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+
+            # Player weights (how fast each player clears strongholds)
+            weights_frame = ctk.CTkFrame(frame, fg_color="transparent")
+            weights_frame.grid(row=1, column=0, padx=5, pady=(0, 5), sticky="w")
+
+            ctk.CTkLabel(weights_frame, text="Weight", font=("Arial", 16)).grid(row=0, column=0, padx=(0, 6))
+            for col, player in enumerate(players):
+                ctk.CTkLabel(weights_frame, text=f"P{player+1}", font=("Arial", 16)).grid(row=0, column=1 + col*2, padx=(4, 2))
+                ctk.CTkEntry(weights_frame, textvariable=self.weight_vars[player], width=48, font=("Arial", 16)).grid(row=0, column=2 + col*2)
+
+            # Textbox for Stronghold Ids
+            textbox = ctk.CTkTextbox(frame, font=("Arial", 18))
+            textbox.grid(row=2, column=0, padx=5, pady=5, sticky="nesw")
+            textbox.bind("<KeyRelease>", lambda event, idx=idx: self.update_stronghold_ids(idx))
+
+            self.path_widgets.append({"frame": frame, "label": label, "textbox": textbox})
+
+    def read_player_weights(self):
+        # Returns a weight per player, or None (after telling the user) if any are invalid
+        weights = []
+
+        for player, var in enumerate(self.weight_vars):
+            try:
+                weight = float(var.get().strip())
+                if not (MIN_PLAYER_WEIGHT <= weight <= MAX_PLAYER_WEIGHT):
+                    raise ValueError
+            except ValueError:
+                CTkMessagebox.messagebox(title="Invalid weight", text=f"P{player+1}'s weight must be a number\nfrom {MIN_PLAYER_WEIGHT} to {MAX_PLAYER_WEIGHT}.", sound='off')
+                return None
+
+            weights.append(weight)
+
+        return weights
+
+    #==========================================================================================
+
+    def press_if_enabled(self, button):
+        # Enter key: act like clicking the button, unless it's locked while paths generate
+        if button.cget("state") != "disabled":
+            button.invoke()
+
+    def reset_clicked(self):
+        # First click arms the button for 3 seconds, second click resets
+        if self.reset_armed is None:
+            self.reset_button.configure(text="Sure?")
+            self.reset_armed = self.after(3000, self.disarm_reset)
+            return
+
+        self.disarm_reset()
+        self.reset_all()
+
+    def disarm_reset(self):
+        if self.reset_armed is not None:
+            self.after_cancel(self.reset_armed)
+            self.reset_armed = None
+        self.reset_button.configure(text="Reset")
+
+    def reset_all(self):
+        # Back to a fresh start: no rings, 1 player, default settings, no paths
+        for sh in self.stronghold_objects:
+            sh.destroy()
+        self.stronghold_objects = []
+
+        for _, x_var, z_var in self.ring_vars:
+            x_var.set("")
+            z_var.set("")
+
+        self.computation_time_var.set(str(DEFAULT_COMPUTATION_TIME))
+        self.spawn_reset_var.set(False)
+        self.previous_bed_var.set(False)
+
+        self.player_paths = [[[0, f"{self.colors[0]}"]]]
+        del self.weight_vars[1:]
+        self.weight_vars[0].set(str(DEFAULT_PLAYER_WEIGHT))
+        self.num_players_var.set("1")
+        self.set_player_number()  # rebuilds the path boxes, redraws and saves the session
 
     def set_player_number(self):
         # Get Number of players
@@ -193,33 +398,24 @@ class App(ctk.CTk):
         self.num_of_players = num_players
         self.num_of_paths = (num_players + 1) // 2
 
-        current_paths = len(self.scrollable_window.winfo_children())
+        # Keep existing weights, new players start at the default
+        del self.weight_vars[num_players:]
+        while len(self.weight_vars) < num_players:
+            self.weight_vars.append(ctk.StringVar(value=str(DEFAULT_PLAYER_WEIGHT)))
 
-        # Destroy widgets and pop extra paths
-        if self.num_of_paths < current_paths:
-            for widget in self.scrollable_window.winfo_children()[self.num_of_paths:]:
-                widget.destroy()
-
-            while len(self.player_paths) > self.num_of_paths:
-                self.player_paths.pop(self.num_of_paths)
-
-        # Generate frames for new paths if needed
-        for i in range(current_paths, self.num_of_paths):
+        # Pop extra paths / add empty new ones
+        del self.player_paths[self.num_of_paths:]
+        for i in range(len(self.player_paths), self.num_of_paths):
             self.player_paths.append([[i, f"{self.colors[i]}"]])
 
-            frame = ctk.CTkFrame(self.scrollable_window)
-            frame.grid(row=0, column=i, pady=5, padx=5, sticky="nsw")
-
-            ctk.CTkLabel(frame, text=f"Path {i+1} (0)", font=("Arial", 18), text_color=self.colors[i]).grid(row=0, column=0, padx=5, pady=5, sticky="w")
-
-            textbox = ctk.CTkTextbox(frame, font=("Arial", 18))
-            textbox.grid(row=1, column=0, padx=5, pady=5, sticky="nesw")
-            textbox.bind("<KeyRelease>", lambda event, idx=i: self.update_stronghold_ids(idx))
+        # Pairings change with the player count, so rebuild the path frames
+        self.build_path_frames()
 
         # Update Everything
         self.update_textbox()
         self.update_path_labels()
         self.draw_paths_on_canvas()
+        self.save_session()
 
 
 
@@ -227,8 +423,8 @@ class App(ctk.CTk):
     def update_textbox(self):
         for idx, player_path in enumerate(self.player_paths):
 
-            # Get the textbox for this player
-            textbox = self.scrollable_window.winfo_children()[idx].winfo_children()[1]
+            # Get the textbox for this path
+            textbox = self.path_widgets[idx]["textbox"]
 
             # create stronghold IDs list
             stronghold_ids = [str(sh_id) for sh_id, _, _ in player_path[1:]]
@@ -262,7 +458,10 @@ class App(ctk.CTk):
         origin_x = int((0 - WORLD_MIN) / WORLD_RANGE * side) + offset_x
         origin_y = int((0 - WORLD_MIN) / WORLD_RANGE * side) + offset_y
 
-        for idx, player_path in enumerate(self.player_paths):
+        # While generating, show the solver's best routes so far
+        paths = self.preview_paths if self.preview_paths is not None else self.player_paths
+
+        for idx, player_path in enumerate(paths):
 
             stops = player_path[1:]
             if not stops:
@@ -298,10 +497,8 @@ class App(ctk.CTk):
         return self.num_of_players % 2 == 1 and idx == self.num_of_paths - 1
 
     def update_path_labels(self):
-        frames = self.scrollable_window.winfo_children()
-        
         for idx, path in enumerate(self.player_paths):
-            label = frames[idx].winfo_children()[0]
+            label = self.path_widgets[idx]["label"]
             text = f"Path {idx+1} ({len(path) - 1})"
 
             # With an odd player count the last path belongs to the unpaired player
@@ -313,7 +510,30 @@ class App(ctk.CTk):
 
             label.configure(text=text)
 
+    def read_computation_time(self):
+        # Returns whole seconds, or None (after telling the user) if invalid
+        try:
+            seconds = int(self.computation_time_entry.get().strip())
+            if not (MIN_COMPUTATION_TIME <= seconds <= MAX_COMPUTATION_TIME):
+                raise ValueError
+        except ValueError:
+            CTkMessagebox.messagebox(title="Invalid time", text=f"Time must be a whole number of seconds\nfrom {MIN_COMPUTATION_TIME} to {MAX_COMPUTATION_TIME}.", sound='off')
+            return None
+
+        return seconds
+
     def generate_path(self):
+        if self.generation is not None:
+            return
+
+        player_weights = self.read_player_weights()
+        if player_weights is None:
+            return
+
+        computation_time = self.read_computation_time()
+        if computation_time is None:
+            return
+
         valid_strongholds = []
 
         # Skip any strongholds that were first in the ring.
@@ -321,9 +541,151 @@ class App(ctk.CTk):
             if sh.number not in STRONGHOLDS_RING_START:
                 valid_strongholds.append([sh.number, sh.x, sh.z])
 
-        # Compute optimal paths (one per spawn -> spawn loop)
-        routes = solve_player_paths(strongholds=valid_strongholds, num_players=self.num_of_players, computation_time=60, advanced_pathing=ADVANCED_PATHING)
+        solver_args = {
+            "strongholds": valid_strongholds,
+            "player_weights": player_weights,
+            "computation_time": computation_time,
+            "spawn_reset": self.spawn_reset_var.get(),
+            "previous_bed": self.previous_bed_var.get(),
+        }
 
+        # Compute optimal paths (one per spawn -> spawn loop) in a separate process so the window stays responsive
+        context = multiprocessing.get_context("spawn")
+        result_queue = context.Queue()
+        process = context.Process(target=solve_in_background, args=(result_queue, solver_args), daemon=True)
+        process.start()
+
+        self.generation = {"process": process, "queue": result_queue, "start": time.monotonic(), "time": computation_time}
+        self.show_generating(True)
+        self.after(100, self.poll_generation)
+
+    def poll_generation(self):
+        job = self.generation
+        if job is None:  # cancelled
+            return
+
+        # Read everything the solver has sent: progress snapshots, then "done" or "error"
+        finished = self.read_solver_messages(job, wait=False)
+
+        if finished is None and not job["process"].is_alive():
+            # Process ended; collect anything still in flight
+            finished = self.read_solver_messages(job, wait=True) or ("error", "The path solver stopped unexpectedly.")
+
+        if finished is None:
+            # Still working: update the progress display and check again shortly
+            self.update_progress_display()
+            self.after(100, self.poll_generation)
+            return
+
+        status, result = finished
+        self.generation = None
+        self.show_generating(False)
+
+        if status == "error":
+            CTkMessagebox.messagebox(title="Path generation failed", text=str(result), sound='off')
+            return
+
+        self.apply_routes(result)
+
+    def read_solver_messages(self, job, wait):
+        # Applies progress messages; returns ("done", routes) / ("error", message) once one arrives, else None
+        while True:
+            try:
+                kind, payload = job["queue"].get(timeout=1) if wait else job["queue"].get_nowait()
+            except queue.Empty:
+                return None
+
+            if kind != "progress":
+                return kind, payload
+
+            self.progress_info = payload
+            if payload["routes"] is not None:
+                self.preview_paths = [[[i, f"{self.colors[i]}"]] + route for i, route in enumerate(payload["routes"])]
+                self.draw_paths_on_canvas()
+
+    def update_progress_display(self):
+        job = self.generation
+        info = self.progress_info
+
+        elapsed = time.monotonic() - job["start"]
+        remaining = job["time"] - elapsed
+        stage = info["stage"] if info else "Starting solver"
+
+        self.progress_bar.set(min(elapsed / job["time"], 1))
+        time_text = f"{math.ceil(remaining)} s left" if remaining > 0 else "Finishing up"
+        self.progress_label.configure(text=f"{time_text} · {stage}...")
+
+        if not info or info["total"] is None:
+            self.progress_stats.configure(text="Waiting for the first solution...")
+            return
+
+        since = max(0, round(time.time() - info["last_improvement"]))
+        lines = [
+            f"Better routes found: {info['improvements']} (last {since} s ago)",
+            f"Total travel: {info['total']:,.0f} nether blocks",
+        ]
+        if info["first_total"] and info["total"] < info["first_total"]:
+            lines.append(f"{(1 - info['total'] / info['first_total']) * 100:.1f}% shorter than the first solution")
+        else:
+            lines.append("First solution found")
+        self.progress_stats.configure(text="\n".join(lines))
+
+        for (count_label, distance_label), path in zip(self.progress_rows, info["paths"]):
+            count_label.configure(text=str(path["count"]))
+            distance_label.configure(text=f"{path['distance']:,.0f}")
+
+    def build_progress_table(self):
+        # Header + one row per path: name (in its map colour), strongholds, nether blocks
+        for widget in self.progress_table.winfo_children():
+            widget.destroy()
+        self.progress_rows = []
+
+        for col, heading in enumerate(["Path", "Strongholds", "Nether Blocks"]):
+            ctk.CTkLabel(self.progress_table, text=heading, font=("Arial", 14, "bold")).grid(row=0, column=col, sticky="w", padx=8)
+
+        for idx, players in enumerate(group_players(self.num_of_players)):
+            name = "Solo Path" if len(players) == 1 else f"Path {idx+1}"
+            ctk.CTkLabel(self.progress_table, text=name, font=("Arial", 14), text_color=self.colors[idx]).grid(row=idx+1, column=0, sticky="w", padx=8)
+
+            count_label = ctk.CTkLabel(self.progress_table, text="-", font=("Arial", 14))
+            count_label.grid(row=idx+1, column=1, sticky="e", padx=8)
+            distance_label = ctk.CTkLabel(self.progress_table, text="-", font=("Arial", 14))
+            distance_label.grid(row=idx+1, column=2, sticky="e", padx=8)
+
+            self.progress_rows.append((count_label, distance_label))
+
+    def cancel_generation(self):
+        job = self.generation
+        if job is None:
+            return
+
+        self.generation = None
+        job["process"].terminate()
+        self.show_generating(False)
+
+    def show_generating(self, generating):
+        # Lock controls that would change the inputs and show/hide the progress overlay
+        for widget in self.lockable_widgets:
+            widget.configure(state="disabled" if generating else "normal")
+
+        self.generate_button.configure(text="Generating..." if generating else "Generate Paths")
+
+        if generating:
+            # Start from a clean map; the best routes are drawn as the solver finds them
+            self.progress_info = None
+            self.preview_paths = [[[i, f"{self.colors[i]}"]] for i in range(self.num_of_paths)]
+            self.build_progress_table()
+            self.update_progress_display()
+            self.progress_overlay.place(relx=0, rely=0, relwidth=1, relheight=1)
+            self.progress_overlay.lift()
+        else:
+            self.progress_overlay.place_forget()
+            self.preview_paths = None
+            self.progress_info = None
+
+        self.draw_paths_on_canvas()
+
+    def apply_routes(self, routes):
         # Reconstruct paths
         new_paths = []
         for i in range(self.num_of_paths):
@@ -335,60 +697,128 @@ class App(ctk.CTk):
         self.update_textbox()
         self.update_path_labels()
         self.draw_paths_on_canvas()
+        self.save_session()
+
+    #==========================================================================================
+    # Session: saved after every change and on close, loaded on start
+    #==========================================================================================
+
+    def save_session(self):
+        if self.loading_session:
+            return
+
+        # Rings are stored by the coordinates they were SET with (the first stronghold of each ring)
+        rings = {}
+        for sh in self.stronghold_objects:
+            if sh.ring_index == 0:
+                rings[str(sh.ring)] = [sh.x, sh.z]
+
+        session = {
+            "version": APP_VERSION,
+            "rings": rings,
+            "players": self.num_of_players,
+            "weights": [var.get() for var in self.weight_vars],
+            "time": self.computation_time_var.get(),
+            "spawn_reset": bool(self.spawn_reset_var.get()),
+            "previous_bed": bool(self.previous_bed_var.get()),
+            "paths": [[stop[0] for stop in path[1:]] for path in self.player_paths],
+        }
+
+        try:
+            os.makedirs(os.path.dirname(SESSION_PATH), exist_ok=True)
+            temp_path = SESSION_PATH + ".tmp"
+            with open(temp_path, "w", encoding="utf-8") as file:
+                json.dump(session, file, indent=2)
+            os.replace(temp_path, SESSION_PATH)  # never leaves a half-written session
+        except OSError as error:
+            print(f"Could not save session: {error}")
+
+    def load_session(self):
+        try:
+            with open(SESSION_PATH, encoding="utf-8") as file:
+                session = json.load(file)
+        except FileNotFoundError:
+            return
+        except (OSError, ValueError) as error:
+            print(f"Could not load session: {error}")
+            return
+
+        self.loading_session = True
+        try:
+            # Rings (re-predicts every stronghold)
+            for ring, (x, z) in session.get("rings", {}).items():
+                ring_var, x_var, z_var = self.ring_vars[int(ring)]
+                x_var.set(str(x))
+                z_var.set(str(z))
+                self.update_ring(ring_var, x_var, z_var)
+
+            # Players and their weights
+            self.num_players_var.set(str(session.get("players", 1)))
+            self.set_player_number()
+            for var, weight in zip(self.weight_vars, session.get("weights", [])):
+                var.set(str(weight))
+
+            # Settings
+            self.computation_time_var.set(str(session.get("time", DEFAULT_COMPUTATION_TIME)))
+            self.spawn_reset_var.set(bool(session.get("spawn_reset", False)))
+            self.previous_bed_var.set(bool(session.get("previous_bed", False)))
+
+            # Paths, rebuilt from the current strongholds
+            by_number = {sh.number: sh for sh in self.stronghold_objects}
+            for idx, ids in enumerate(session.get("paths", [])[:self.num_of_paths]):
+                stops = [[number, by_number[number].x, by_number[number].z] for number in ids if number in by_number]
+                self.player_paths[idx] = [[idx, f"{self.colors[idx]}"]] + stops
+
+            self.update_textbox()
+            self.update_path_labels()
+            self.draw_paths_on_canvas()
+        except Exception as error:
+            print(f"Could not restore session: {error}")
+        finally:
+            self.loading_session = False
+
+    def on_close(self):
+        # Weights and time aren't saved as they're typed, so save once more on the way out
+        self.save_session()
+        if self.generation is not None:
+            self.generation["process"].terminate()
+        self.destroy()
+
     #==========================================================================================
 
     def copy_paths_to_clipboard(self):
 
         export_text = "All Portals Paths\n"
-        spawn = [-1, 0, 0]
+        spawn_reset = self.spawn_reset_var.get()
+        previous_bed = self.previous_bed_var.get()
 
         for path_idx, path in enumerate(self.player_paths):
-            total_distance = 0
             path_notes = {}
 
             stops = path[1:]
-            route = [spawn] + stops
-            if not self.is_solo_path(path_idx):
-                route.append(spawn)
-            has_return = not self.is_solo_path(path_idx)
+            is_shared = not self.is_solo_path(path_idx)
 
-            for k in range(len(route) - 1):
-                current = route[k]
-                next_portal = route[k + 1]
-                is_return = has_return and (k == len(route) - 2)
+            # Pick where to respawn before each leg using the enabled optimisers
+            total_distance, legs = plan_route(stops, closed=is_shared, spawn_reset=spawn_reset, previous_bed=previous_bed)
 
-                distance_from_stronghold = math.hypot(current[1] - next_portal[1], current[2] - next_portal[2])
-
-                if not ADVANCED_PATHING:
-                    total_distance += distance_from_stronghold
+            for i, leg in enumerate(legs):
+                # The return to spawn on a shared path isn't a leg anyone follows a note for
+                if leg is None or i == len(stops) - 1:
                     continue
 
-                # Advanced: the final reset back to spawn is free
-                if is_return:
-                    continue
+                saving = round(leg["saving"] / NETHER_SCALE)
 
-                # From spawn (not applicable when already standing at spawn)
-                distance_from_origin = math.hypot(next_portal[1], next_portal[2]) if k > 0 else float("inf")
-
-                # From previous stronghold (needs a stronghold before current)
-                if k >= 2:
-                    previous = route[k - 1]
-                    distance_from_previous = math.hypot(previous[1] - next_portal[1], previous[2] - next_portal[2])
-                else:
-                    distance_from_previous = float("inf")
-
-                distances = {"stronghold": distance_from_stronghold, "origin": distance_from_origin, "previous": distance_from_previous}
-                shortest = min(distances, key=distances.get)
-
-                total_distance += distances[shortest]
-
-                if shortest == "origin":
-                    path_notes[k - 1] = f"DO NOT PLACE BED! {round((distance_from_stronghold - distance_from_origin)/8)} nether blocks faster via SPAWN."
-                elif shortest == "previous":
-                    path_notes[k - 1] = f"KEEP CURRENT BED! {round((distance_from_stronghold - distance_from_previous)/8)} nether blocks faster via CURRENT bed."
+                if leg["option"] == "spawn":
+                    path_notes[i] = f"DO NOT PLACE BED! {saving} nether blocks faster via SPAWN."
+                elif leg["option"] == "keep":
+                    if saving > 0:
+                        path_notes[i] = f"KEEP CURRENT BED! {saving} nether blocks faster via CURRENT bed."
+                    else:
+                        # Costs a little on this leg but pays off on a later one
+                        path_notes[i] = "KEEP CURRENT BED! Faster overall via CURRENT bed."
 
             # Divide by 8 for Nether coordinates
-            total_distance = round(total_distance / 8)
+            total_distance = round(total_distance / NETHER_SCALE)
 
             export_text += f'\nPath {path[0][0] + 1} = {total_distance} Nether Blocks\n'
 
@@ -409,7 +839,7 @@ class App(ctk.CTk):
 
     def update_stronghold_ids(self, player_index):  # player_index is now a path index
 
-        textbox = self.scrollable_window.winfo_children()[player_index].winfo_children()[1]
+        textbox = self.path_widgets[player_index]["textbox"]
 
         # Parse Text
         text = textbox.get("1.0", "end").strip()
@@ -437,6 +867,7 @@ class App(ctk.CTk):
 
         self.update_path_labels()
         self.draw_paths_on_canvas()
+        self.save_session()
 
     #==========================================================================================
 
@@ -526,6 +957,8 @@ class App(ctk.CTk):
             # Append to list
             self.stronghold_objects.append(StrongholdObject(app=self, ring=ring_val, index=i, x=x, z=z, angle=angle))
 
+        self.save_session()
+
     def resize_canvas_frame(self, event):
         # Canvas size
         cw, ch = event.width, event.height
@@ -553,5 +986,16 @@ class App(ctk.CTk):
 
 
 if __name__ == "__main__":
+    # Needed for the path solver process in the PyInstaller exe
+    multiprocessing.freeze_support()
+
+    # Give the app its own taskbar entry so Windows shows the ender eye instead of Python's icon
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("CommonCrayon.CrayonAllPortals")
+        except Exception:
+            pass
+
     app = App()
     app.mainloop()
